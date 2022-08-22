@@ -25,11 +25,17 @@ to ```Random```, a random scheduler is chosen.
 
 ## Installation and Execution
 
-```git clone https://github.com/pgritsch/faast_public.git && cd faast_public```
+```shell
+git clone https://github.com/pgritsch/faast_public.git && cd faast_public
+```
 
-```gradle clean build ```
+```shell
+gradle clean build
+```
 
-```java -jar build/libs/afcl_published-1.0-IEEE.jar```
+```shell
+java -jar build/libs/afcl_published-1.0-IEEE.jar
+```
 
 ## Example Workflow - BWA
 For BWA see [https://doi.org/10.1093/bioinformatics/btp698](https://doi.org/10.1093/bioinformatics/btp698)
