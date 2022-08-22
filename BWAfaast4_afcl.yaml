@@ -96,25 +96,25 @@ workflowBody:
             - name: "distribution"
               value: "REPLICATE(*)"
         - name: "folders1"
-          type: "strung"
+          type: "string"
           source: "BWA/folders1"
           constraints:
             - name: "distribution"
               value: "REPLICATE(*)"
         - name: "folders2"
-          type: "strung"
+          type: "string"
           source: "BWA/folders2"
           constraints:
             - name: "distribution"
               value: "REPLICATE(*)"
         - name: "folders3"
-          type: "strung"
+          type: "string"
           source: "BWA/folders3"
           constraints:
             - name: "distribution"
               value: "REPLICATE(*)"
         - name: "folders4"
-          type: "strung"
+          type: "string"
           source: "BWA/folders4"
           constraints:
             - name: "distribution"
@@ -205,9 +205,6 @@ workflowBody:
                       dataOuts:
                         - name: "fasta"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:bwasplit1024SA"
                   - function:
                       name: "index0"
                       type: "bwaIndexType"
@@ -226,9 +223,6 @@ workflowBody:
                       dataOuts:
                         - name: "fastaIndexed"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
                   - parallel:
                       name: "parALN0"
                       dataIns:
@@ -256,9 +250,6 @@ workflowBody:
                                 dataOuts:
                                   - name: "aln1"
                                     type: "string"
-                                properties:
-                                  - name: "resource"
-                                    value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaAln1024"
                         - section:
                             - function:
                                 name: "bwaAlnR2_0"
@@ -273,9 +264,6 @@ workflowBody:
                                 dataOuts:
                                   - name: "aln2"
                                     type: "string"
-                                properties:
-                                  - name: "resource"
-                                    value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaAln21024"
                       dataOuts:
                         - name: "aln"
                           type: "collection"
@@ -290,9 +278,6 @@ workflowBody:
                       dataOuts:
                         - name: "sam"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
               - section:
                   - function:
                       name: "split1"
@@ -324,9 +309,6 @@ workflowBody:
                       dataOuts:
                         - name: "fasta"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:bwasplit1024SA"
                   - function:
                       name: "index1"
                       type: "bwaIndexType"
@@ -345,9 +327,6 @@ workflowBody:
                       dataOuts:
                         - name: "fastaIndexed"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
                   - parallel:
                       name: "parALN1"
                       dataIns:
@@ -375,9 +354,6 @@ workflowBody:
                                 dataOuts:
                                   - name: "aln1"
                                     type: "string"
-                                properties:
-                                  - name: "resource"
-                                    value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaAln1024"
                         - section:
                             - function:
                                 name: "bwaAlnR2_1"
@@ -392,9 +368,6 @@ workflowBody:
                                 dataOuts:
                                   - name: "aln2"
                                     type: "string"
-                                properties:
-                                  - name: "resource"
-                                    value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaAln21024"
                       dataOuts:
                         - name: "aln"
                           type: "collection"
@@ -409,9 +382,6 @@ workflowBody:
                       dataOuts:
                         - name: "sam"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
               - section:
                   - function:
                       name: "split2"
@@ -443,9 +413,6 @@ workflowBody:
                       dataOuts:
                         - name: "fasta"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:bwasplit1024SA"
                   - function:
                       name: "index2"
                       type: "bwaIndexType"
@@ -464,9 +431,6 @@ workflowBody:
                       dataOuts:
                         - name: "fastaIndexed"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
                   - parallel:
                       name: "parALN2"
                       dataIns:
@@ -494,9 +458,6 @@ workflowBody:
                                 dataOuts:
                                   - name: "aln1"
                                     type: "string"
-                                properties:
-                                  - name: "resource"
-                                    value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaAln1024"
                         - section:
                             - function:
                                 name: "bwaAlnR2_2"
@@ -511,9 +472,6 @@ workflowBody:
                                 dataOuts:
                                   - name: "aln2"
                                     type: "string"
-                                properties:
-                                  - name: "resource"
-                                    value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaAln21024"
                       dataOuts:
                         - name: "aln"
                           type: "collection"
@@ -528,9 +486,6 @@ workflowBody:
                       dataOuts:
                         - name: "sam"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
               - section:
                   - function:
                       name: "split3"
@@ -562,9 +517,6 @@ workflowBody:
                       dataOuts:
                         - name: "fasta"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:bwasplit1024SA"
                   - function:
                       name: "index3"
                       type: "bwaIndexType"
@@ -583,9 +535,6 @@ workflowBody:
                       dataOuts:
                         - name: "fastaIndexed"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
                   - parallel:
                       name: "parALN3"
                       dataIns:
@@ -613,9 +562,6 @@ workflowBody:
                                 dataOuts:
                                   - name: "aln1"
                                     type: "string"
-                                properties:
-                                  - name: "resource"
-                                    value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaAln1024"
                         - section:
                             - function:
                                 name: "bwaAlnR2_3"
@@ -630,9 +576,6 @@ workflowBody:
                                 dataOuts:
                                   - name: "aln2"
                                     type: "string"
-                                properties:
-                                  - name: "resource"
-                                    value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaAln21024"
                       dataOuts:
                         - name: "aln"
                           type: "collection"
@@ -647,9 +590,6 @@ workflowBody:
                       dataOuts:
                         - name: "sam"
                           type: "string"
-                      properties:
-                        - name: "resource"
-                          value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
             dataOuts:
               - name: "sam"
                 type: "collection"
@@ -664,9 +604,6 @@ workflowBody:
             dataOuts:
               - name: "samMerged"
                 type: "string"
-            properties:
-              - name: "resource"
-                value: "arn:aws:lambda:us-east-1:170392512081:function:terrasamtoolsMerge1024"
         - function:
             name: "sort"
             type: "sortType"
@@ -679,9 +616,6 @@ workflowBody:
                 type: "string"
               - name: "bambai"
                 type: "string"
-            properties:
-              - name: "resource"
-                value: "arn:aws:lambda:us-east-1:170392512081:function:terrasamtoolsSort1024"
       dataOuts:
         - name: "bam"
           type: "collection"
