@@ -1,0 +1,3374 @@
+---
+name: "BWA"
+dataIns:
+- name: "fastaFolder"
+  type: "collection"
+  source: "fastaFolder"
+- name: "fasta"
+  type: "string"
+  source: "fasta"
+- name: "R1"
+  type: "string"
+  source: "R1"
+- name: "R2"
+  type: "string"
+  source: "R2"
+- name: "folders1"
+  type: "string"
+  source: "folders1"
+- name: "folders2"
+  type: "string"
+  source: "folders2"
+- name: "folders3"
+  type: "string"
+  source: "folders3"
+- name: "folders4"
+  type: "string"
+  source: "folders4"
+- name: "folderindex1"
+  type: "number"
+  source: "folderindex1"
+- name: "folderindex2"
+  type: "number"
+  source: "folderindex2"
+- name: "folderindex3"
+  type: "number"
+  source: "folderindex3"
+- name: "folderindex4"
+  type: "number"
+  source: "folderindex4"
+- name: "N"
+  type: "number"
+  source: "N"
+- name: "chunks"
+  type: "number"
+  source: "chunks"
+workflowBody:
+- parallel:
+    name: "parallelized_pForSamples"
+    dataIns:
+    - name: "fastaFolder"
+      type: "string"
+      source: "BWA/fastaFolder"
+      properties: []
+      constraints: []
+    - name: "fasta"
+      type: "string"
+      source: "BWA/fasta"
+      properties: []
+      constraints: []
+    - name: "R1"
+      type: "string"
+      source: "BWA/R1"
+      properties: []
+      constraints: []
+    - name: "R2"
+      type: "string"
+      source: "BWA/R2"
+      properties: []
+      constraints: []
+    - name: "folderindex1"
+      type: "number"
+      source: "BWA/folderindex1"
+      properties: []
+      constraints: []
+    - name: "folderindex2"
+      type: "number"
+      source: "BWA/folderindex2"
+      properties: []
+      constraints: []
+    - name: "folderindex3"
+      type: "number"
+      source: "BWA/folderindex3"
+      properties: []
+      constraints: []
+    - name: "folderindex4"
+      type: "number"
+      source: "BWA/folderindex4"
+      properties: []
+      constraints: []
+    - name: "folders1"
+      type: "string"
+      source: "BWA/folders1"
+      properties: []
+      constraints: []
+    - name: "folders2"
+      type: "string"
+      source: "BWA/folders2"
+      properties: []
+      constraints: []
+    - name: "folders3"
+      type: "string"
+      source: "BWA/folders3"
+      properties: []
+      constraints: []
+    - name: "folders4"
+      type: "string"
+      source: "BWA/folders4"
+      properties: []
+      constraints: []
+    - name: "chunks"
+      type: "number"
+      source: "BWA/chunks"
+      properties: []
+      constraints: []
+    parallelBody:
+    - section:
+      - parallelFor:
+          name: "pForSamples_0"
+          dataIns:
+          - name: "fastaFolder"
+            type: "string"
+            source: "parallelized_pForSamples/fastaFolder"
+            constraints:
+            - name: "distribution"
+              value: "BLOCK(1)"
+          - name: "fasta"
+            type: "string"
+            source: "parallelized_pForSamples/fasta"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R1"
+            type: "string"
+            source: "parallelized_pForSamples/R1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R2"
+            type: "string"
+            source: "parallelized_pForSamples/R2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex1"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex2"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex3"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex4"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders1"
+            type: "string"
+            source: "parallelized_pForSamples/folders1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders2"
+            type: "string"
+            source: "parallelized_pForSamples/folders2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders3"
+            type: "string"
+            source: "parallelized_pForSamples/folders3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders4"
+            type: "string"
+            source: "parallelized_pForSamples/folders4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "chunks"
+            type: "number"
+            source: "parallelized_pForSamples/chunks"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          loopCounter:
+            type: "number"
+            from: "0"
+            to: "12"
+            step: "1"
+          loopBody:
+          - parallel:
+              name: "pSample_0"
+              dataIns:
+              - name: "fastaFolder"
+                type: "string"
+                source: "pForSamples_0/fastaFolder"
+              - name: "fasta"
+                type: "string"
+                source: "pForSamples_0/fasta"
+              - name: "R1"
+                type: "string"
+                source: "pForSamples_0/R1"
+              - name: "R2"
+                type: "string"
+                source: "pForSamples_0/R2"
+              - name: "folderindex1"
+                type: "number"
+                source: "pForSamples_0/folderindex1"
+              - name: "folderindex2"
+                type: "number"
+                source: "pForSamples_0/folderindex2"
+              - name: "folderindex3"
+                type: "number"
+                source: "pForSamples_0/folderindex3"
+              - name: "folderindex4"
+                type: "number"
+                source: "pForSamples_0/folderindex4"
+              - name: "folders1"
+                type: "string"
+                source: "pForSamples_0/folders1"
+              - name: "folders2"
+                type: "string"
+                source: "pForSamples_0/folders2"
+              - name: "folders3"
+                type: "string"
+                source: "pForSamples_0/folders3"
+              - name: "folders4"
+                type: "string"
+                source: "pForSamples_0/folders4"
+              - name: "chunks"
+                type: "number"
+                source: "pForSamples_0/chunks"
+              parallelBody:
+              - section:
+                - function:
+                    name: "split0_0"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_0/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_0/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_0/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_0/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_0/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_0/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_0/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/split.json"
+                - function:
+                    name: "index0_0"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_0/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_0/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_0/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaIndexAWSPythonF"
+                - parallel:
+                    name: "parALN0_0"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_0/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_0/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_0/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_0_0"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_0/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_0/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/aln1.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_0_0"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_0/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_0/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaAlnR2AWSPythonF"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_0/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_0/R1,parALN0_0/R2"
+                - function:
+                    name: "sampe0_0"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_0/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/sampe.json"
+              - section:
+                - function:
+                    name: "split1_0"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_0/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_0/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_0/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_0/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_0/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_0/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_0/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/split.json"
+                - function:
+                    name: "index1_0"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split1_0/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split1_0/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split1_0/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaIndexAWSPythonF"
+                - parallel:
+                    name: "parALN1_0"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index1_0/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index1_0/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index1_0/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_1_0"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_0/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN1_0/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/aln1.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_1_0"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_0/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN1_0/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaAlnR2AWSPythonF"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_0/fastaIndexed,bwaAlnR1_1/aln1,bwaAlnR2_1/aln2,parALN1_0/R1,parALN1_0/R2"
+                - function:
+                    name: "sampe1_0"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_0/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/sampe.json"
+              - section:
+                - function:
+                    name: "split2_0"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_0/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_0/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_0/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_0/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_0/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_0/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_0/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/split.json"
+                - function:
+                    name: "index2_0"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_0/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_0/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_0/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaIndexAWSPythonF"
+                - parallel:
+                    name: "parALN2_0"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_0/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_0/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_0/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_2_0"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_0/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_0/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/aln1.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_2_0"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_0/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_0/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaAlnR2AWSPythonF"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_0/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_0/R1,parALN0_0/R2"
+                - function:
+                    name: "sampe2_0"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_0/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/sampe.json"
+              - section:
+                - function:
+                    name: "split3_0"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_0/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_0/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_0/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_0/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_0/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_0/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_0/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/split.json"
+                - function:
+                    name: "index3_0"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_0/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_0/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_0/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaIndexAWSPythonF"
+                - parallel:
+                    name: "parALN3_0"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_0/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_0/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_0/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_3_0"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_0/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_0/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/aln1.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_3_0"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_0/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_0/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaAlnR2AWSPythonF"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_0/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_0/R1,parALN0_0/R2"
+                - function:
+                    name: "sampe3_0"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_0/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/sampe.json"
+              dataOuts:
+              - name: "sam"
+                type: "collection"
+                source: "sampe0_0/sam"
+          - function:
+              name: "merge_0"
+              type: "mergeType"
+              dataIns:
+              - name: "sam"
+                type: "collection"
+                source: "pSample_0/sam"
+              dataOuts:
+              - name: "samMerged"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/merge.json"
+          - function:
+              name: "sort_0"
+              type: "sortType"
+              dataIns:
+              - name: "samMerged"
+                type: "string"
+                source: "merge_0/samMerged"
+              dataOuts:
+              - name: "bam"
+                type: "string"
+              - name: "bambai"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-east.functions.appdomain.cloud/api/v1/web/afcl_Washington/default/bwaSortIBMPythonSaafSupportUS_us-east_1024.json"
+          dataOuts:
+          - name: "bam"
+            type: "collection"
+            source: "sort_0/bam"
+          - name: "bambai"
+            type: "collection"
+            source: "sort_0/bambai"
+          constraints:
+          - name: "concurrency"
+            value: "24"
+    - section:
+      - parallelFor:
+          name: "pForSamples_1"
+          dataIns:
+          - name: "fastaFolder"
+            type: "string"
+            source: "parallelized_pForSamples/fastaFolder"
+            constraints:
+            - name: "distribution"
+              value: "BLOCK(1)"
+          - name: "fasta"
+            type: "string"
+            source: "parallelized_pForSamples/fasta"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R1"
+            type: "string"
+            source: "parallelized_pForSamples/R1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R2"
+            type: "string"
+            source: "parallelized_pForSamples/R2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex1"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex2"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex3"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex4"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders1"
+            type: "string"
+            source: "parallelized_pForSamples/folders1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders2"
+            type: "string"
+            source: "parallelized_pForSamples/folders2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders3"
+            type: "string"
+            source: "parallelized_pForSamples/folders3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders4"
+            type: "string"
+            source: "parallelized_pForSamples/folders4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "chunks"
+            type: "number"
+            source: "parallelized_pForSamples/chunks"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          loopCounter:
+            type: "number"
+            from: "12"
+            to: "24"
+            step: "1"
+          loopBody:
+          - parallel:
+              name: "pSample_1"
+              dataIns:
+              - name: "fastaFolder"
+                type: "string"
+                source: "pForSamples_1/fastaFolder"
+              - name: "fasta"
+                type: "string"
+                source: "pForSamples_1/fasta"
+              - name: "R1"
+                type: "string"
+                source: "pForSamples_1/R1"
+              - name: "R2"
+                type: "string"
+                source: "pForSamples_1/R2"
+              - name: "folderindex1"
+                type: "number"
+                source: "pForSamples_1/folderindex1"
+              - name: "folderindex2"
+                type: "number"
+                source: "pForSamples_1/folderindex2"
+              - name: "folderindex3"
+                type: "number"
+                source: "pForSamples_1/folderindex3"
+              - name: "folderindex4"
+                type: "number"
+                source: "pForSamples_1/folderindex4"
+              - name: "folders1"
+                type: "string"
+                source: "pForSamples_1/folders1"
+              - name: "folders2"
+                type: "string"
+                source: "pForSamples_1/folders2"
+              - name: "folders3"
+                type: "string"
+                source: "pForSamples_1/folders3"
+              - name: "folders4"
+                type: "string"
+                source: "pForSamples_1/folders4"
+              - name: "chunks"
+                type: "number"
+                source: "pForSamples_1/chunks"
+              parallelBody:
+              - section:
+                - function:
+                    name: "split0_1"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_1/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_1/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_1/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_1/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_1/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_1/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_1/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:ap-northeast-1:170392512081:function:terrasplit1024"
+                - function:
+                    name: "index0_1"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_1/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_1/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_1/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/index.json"
+                - parallel:
+                    name: "parALN0_1"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_1/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_1/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_1/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_0_1"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_1/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_1/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/aln1.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_0_1"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_1/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_1/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:ap-northeast-1:170392512081:function:bwaAlnR2AWSPythonT"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_1/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_1/R1,parALN0_1/R2"
+                - function:
+                    name: "sampe0_1"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_1/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaSampeAWSPythonF"
+              - section:
+                - function:
+                    name: "split1_1"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_1/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_1/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_1/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_1/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_1/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_1/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_1/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:ap-northeast-1:170392512081:function:terrasplit1024"
+                - function:
+                    name: "index1_1"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split1_1/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split1_1/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split1_1/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/index.json"
+                - parallel:
+                    name: "parALN1_1"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index1_1/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index1_1/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index1_1/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_1_1"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_1/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN1_1/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/aln1.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_1_1"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_1/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN1_1/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:ap-northeast-1:170392512081:function:bwaAlnR2AWSPythonT"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_1/fastaIndexed,bwaAlnR1_1/aln1,bwaAlnR2_1/aln2,parALN1_1/R1,parALN1_1/R2"
+                - function:
+                    name: "sampe1_1"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_1/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaSampeAWSPythonF"
+              - section:
+                - function:
+                    name: "split2_1"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_1/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_1/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_1/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_1/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_1/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_1/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_1/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:ap-northeast-1:170392512081:function:terrasplit1024"
+                - function:
+                    name: "index2_1"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_1/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_1/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_1/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/index.json"
+                - parallel:
+                    name: "parALN2_1"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_1/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_1/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_1/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_2_1"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_1/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_1/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/aln1.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_2_1"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_1/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_1/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:ap-northeast-1:170392512081:function:bwaAlnR2AWSPythonT"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_1/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_1/R1,parALN0_1/R2"
+                - function:
+                    name: "sampe2_1"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_1/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaSampeAWSPythonF"
+              - section:
+                - function:
+                    name: "split3_1"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_1/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_1/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_1/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_1/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_1/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_1/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_1/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:ap-northeast-1:170392512081:function:terrasplit1024"
+                - function:
+                    name: "index3_1"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_1/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_1/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_1/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/index.json"
+                - parallel:
+                    name: "parALN3_1"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_1/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_1/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_1/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_3_1"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_1/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_1/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/aln1.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_3_1"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_1/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_1/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:ap-northeast-1:170392512081:function:bwaAlnR2AWSPythonT"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_1/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_1/R1,parALN0_1/R2"
+                - function:
+                    name: "sampe3_1"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_1/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaSampeAWSPythonF"
+              dataOuts:
+              - name: "sam"
+                type: "collection"
+                source: "sampe0_1/sam"
+          - function:
+              name: "merge_1"
+              type: "mergeType"
+              dataIns:
+              - name: "sam"
+                type: "collection"
+                source: "pSample_1/sam"
+              dataOuts:
+              - name: "samMerged"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/merge.json"
+          - function:
+              name: "sort_1"
+              type: "sortType"
+              dataIns:
+              - name: "samMerged"
+                type: "string"
+                source: "merge_1/samMerged"
+              dataOuts:
+              - name: "bam"
+                type: "string"
+              - name: "bambai"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-east.functions.appdomain.cloud/api/v1/web/afcl_Washington/default/bwaSortIBMPythonSaafSupportUS_us-east_1024.json"
+          dataOuts:
+          - name: "bam"
+            type: "collection"
+            source: "sort_1/bam"
+          - name: "bambai"
+            type: "collection"
+            source: "sort_1/bambai"
+          constraints:
+          - name: "concurrency"
+            value: "24"
+    - section:
+      - parallelFor:
+          name: "pForSamples_2"
+          dataIns:
+          - name: "fastaFolder"
+            type: "string"
+            source: "parallelized_pForSamples/fastaFolder"
+            constraints:
+            - name: "distribution"
+              value: "BLOCK(1)"
+          - name: "fasta"
+            type: "string"
+            source: "parallelized_pForSamples/fasta"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R1"
+            type: "string"
+            source: "parallelized_pForSamples/R1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R2"
+            type: "string"
+            source: "parallelized_pForSamples/R2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex1"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex2"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex3"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex4"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders1"
+            type: "string"
+            source: "parallelized_pForSamples/folders1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders2"
+            type: "string"
+            source: "parallelized_pForSamples/folders2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders3"
+            type: "string"
+            source: "parallelized_pForSamples/folders3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders4"
+            type: "string"
+            source: "parallelized_pForSamples/folders4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "chunks"
+            type: "number"
+            source: "parallelized_pForSamples/chunks"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          loopCounter:
+            type: "number"
+            from: "24"
+            to: "36"
+            step: "1"
+          loopBody:
+          - parallel:
+              name: "pSample_2"
+              dataIns:
+              - name: "fastaFolder"
+                type: "string"
+                source: "pForSamples_2/fastaFolder"
+              - name: "fasta"
+                type: "string"
+                source: "pForSamples_2/fasta"
+              - name: "R1"
+                type: "string"
+                source: "pForSamples_2/R1"
+              - name: "R2"
+                type: "string"
+                source: "pForSamples_2/R2"
+              - name: "folderindex1"
+                type: "number"
+                source: "pForSamples_2/folderindex1"
+              - name: "folderindex2"
+                type: "number"
+                source: "pForSamples_2/folderindex2"
+              - name: "folderindex3"
+                type: "number"
+                source: "pForSamples_2/folderindex3"
+              - name: "folderindex4"
+                type: "number"
+                source: "pForSamples_2/folderindex4"
+              - name: "folders1"
+                type: "string"
+                source: "pForSamples_2/folders1"
+              - name: "folders2"
+                type: "string"
+                source: "pForSamples_2/folders2"
+              - name: "folders3"
+                type: "string"
+                source: "pForSamples_2/folders3"
+              - name: "folders4"
+                type: "string"
+                source: "pForSamples_2/folders4"
+              - name: "chunks"
+                type: "number"
+                source: "pForSamples_2/chunks"
+              parallelBody:
+              - section:
+                - function:
+                    name: "split0_2"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_2/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_2/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_2/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_2/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_2/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_2/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_2/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/split.json"
+                - function:
+                    name: "index0_2"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_2/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_2/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_2/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaIndexAWSPythonF"
+                - parallel:
+                    name: "parALN0_2"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_2/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_2/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_2/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_0_2"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_2/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_2/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaAlnR1IBMPythonSaafSupportUS_us-south_1024.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_0_2"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_2/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_2/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaAlnR2AWSPythonF"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_2/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_2/R1,parALN0_2/R2"
+                - function:
+                    name: "sampe0_2"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_2/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/sampe.json"
+              - section:
+                - function:
+                    name: "split1_2"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_2/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_2/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_2/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_2/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_2/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_2/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_2/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/split.json"
+                - function:
+                    name: "index1_2"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split1_2/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split1_2/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split1_2/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaIndexAWSPythonF"
+                - parallel:
+                    name: "parALN1_2"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index1_2/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index1_2/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index1_2/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_1_2"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_2/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN1_2/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaAlnR1IBMPythonSaafSupportUS_us-south_1024.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_1_2"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_2/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN1_2/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaAlnR2AWSPythonF"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_2/fastaIndexed,bwaAlnR1_1/aln1,bwaAlnR2_1/aln2,parALN1_2/R1,parALN1_2/R2"
+                - function:
+                    name: "sampe1_2"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_2/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/sampe.json"
+              - section:
+                - function:
+                    name: "split2_2"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_2/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_2/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_2/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_2/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_2/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_2/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_2/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/split.json"
+                - function:
+                    name: "index2_2"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_2/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_2/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_2/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaIndexAWSPythonF"
+                - parallel:
+                    name: "parALN2_2"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_2/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_2/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_2/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_2_2"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_2/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_2/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaAlnR1IBMPythonSaafSupportUS_us-south_1024.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_2_2"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_2/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_2/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaAlnR2AWSPythonF"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_2/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_2/R1,parALN0_2/R2"
+                - function:
+                    name: "sampe2_2"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_2/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/sampe.json"
+              - section:
+                - function:
+                    name: "split3_2"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_2/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_2/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_2/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_2/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_2/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_2/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_2/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://eu-gb.functions.appdomain.cloud/api/v1/web/office%40dps.uibk.ac.at_dev/bwa/split.json"
+                - function:
+                    name: "index3_2"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_2/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_2/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_2/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaIndexAWSPythonF"
+                - parallel:
+                    name: "parALN3_2"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_2/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_2/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_2/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_3_2"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_2/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_2/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaAlnR1IBMPythonSaafSupportUS_us-south_1024.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_3_2"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_2/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_2/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:eu-central-1:170392512081:function:bwaAlnR2AWSPythonF"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_2/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_2/R1,parALN0_2/R2"
+                - function:
+                    name: "sampe3_2"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_2/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/sampe.json"
+              dataOuts:
+              - name: "sam"
+                type: "collection"
+                source: "sampe0_2/sam"
+          - function:
+              name: "merge_2"
+              type: "mergeType"
+              dataIns:
+              - name: "sam"
+                type: "collection"
+                source: "pSample_2/sam"
+              dataOuts:
+              - name: "samMerged"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-east.functions.appdomain.cloud/api/v1/web/uibk_us_east_us-east/bwa/merge.json"
+          - function:
+              name: "sort_2"
+              type: "sortType"
+              dataIns:
+              - name: "samMerged"
+                type: "string"
+                source: "merge_2/samMerged"
+              dataOuts:
+              - name: "bam"
+                type: "string"
+              - name: "bambai"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-east.functions.appdomain.cloud/api/v1/web/afcl_Washington/default/bwaSortIBMPythonSaafSupportUS_us-east_1024.json"
+          dataOuts:
+          - name: "bam"
+            type: "collection"
+            source: "sort_2/bam"
+          - name: "bambai"
+            type: "collection"
+            source: "sort_2/bambai"
+          constraints:
+          - name: "concurrency"
+            value: "24"
+    - section:
+      - parallelFor:
+          name: "pForSamples_3"
+          dataIns:
+          - name: "fastaFolder"
+            type: "string"
+            source: "parallelized_pForSamples/fastaFolder"
+            constraints:
+            - name: "distribution"
+              value: "BLOCK(1)"
+          - name: "fasta"
+            type: "string"
+            source: "parallelized_pForSamples/fasta"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R1"
+            type: "string"
+            source: "parallelized_pForSamples/R1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R2"
+            type: "string"
+            source: "parallelized_pForSamples/R2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex1"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex2"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex3"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex4"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders1"
+            type: "string"
+            source: "parallelized_pForSamples/folders1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders2"
+            type: "string"
+            source: "parallelized_pForSamples/folders2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders3"
+            type: "string"
+            source: "parallelized_pForSamples/folders3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders4"
+            type: "string"
+            source: "parallelized_pForSamples/folders4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "chunks"
+            type: "number"
+            source: "parallelized_pForSamples/chunks"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          loopCounter:
+            type: "number"
+            from: "36"
+            to: "48"
+            step: "1"
+          loopBody:
+          - parallel:
+              name: "pSample_3"
+              dataIns:
+              - name: "fastaFolder"
+                type: "string"
+                source: "pForSamples_3/fastaFolder"
+              - name: "fasta"
+                type: "string"
+                source: "pForSamples_3/fasta"
+              - name: "R1"
+                type: "string"
+                source: "pForSamples_3/R1"
+              - name: "R2"
+                type: "string"
+                source: "pForSamples_3/R2"
+              - name: "folderindex1"
+                type: "number"
+                source: "pForSamples_3/folderindex1"
+              - name: "folderindex2"
+                type: "number"
+                source: "pForSamples_3/folderindex2"
+              - name: "folderindex3"
+                type: "number"
+                source: "pForSamples_3/folderindex3"
+              - name: "folderindex4"
+                type: "number"
+                source: "pForSamples_3/folderindex4"
+              - name: "folders1"
+                type: "string"
+                source: "pForSamples_3/folders1"
+              - name: "folders2"
+                type: "string"
+                source: "pForSamples_3/folders2"
+              - name: "folders3"
+                type: "string"
+                source: "pForSamples_3/folders3"
+              - name: "folders4"
+                type: "string"
+                source: "pForSamples_3/folders4"
+              - name: "chunks"
+                type: "number"
+                source: "pForSamples_3/chunks"
+              parallelBody:
+              - section:
+                - function:
+                    name: "split0_3"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_3/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_3/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_3/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_3/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_3/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_3/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_3/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaSplitIBMPythonSaafSupportUS_us-south_1024.json"
+                - function:
+                    name: "index0_3"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_3/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_3/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_3/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
+                - parallel:
+                    name: "parALN0_3"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_3/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_3/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_3/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_0_3"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_3/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_3/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:ap-northeast-1:170392512081:function:bwaAlnR1AWSPythonT"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_0_3"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_3/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_3/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:us-east-1:170392512081:function:bwaAln21024SA"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_3/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_3/R1,parALN0_3/R2"
+                - function:
+                    name: "sampe0_3"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_3/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
+              - section:
+                - function:
+                    name: "split1_3"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_3/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_3/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_3/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_3/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_3/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_3/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_3/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaSplitIBMPythonSaafSupportUS_us-south_1024.json"
+                - function:
+                    name: "index1_3"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split1_3/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split1_3/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split1_3/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
+                - parallel:
+                    name: "parALN1_3"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index1_3/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index1_3/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index1_3/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_1_3"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_3/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN1_3/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:ap-northeast-1:170392512081:function:bwaAlnR1AWSPythonT"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_1_3"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_3/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN1_3/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:us-east-1:170392512081:function:bwaAln21024SA"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_3/fastaIndexed,bwaAlnR1_1/aln1,bwaAlnR2_1/aln2,parALN1_3/R1,parALN1_3/R2"
+                - function:
+                    name: "sampe1_3"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_3/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
+              - section:
+                - function:
+                    name: "split2_3"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_3/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_3/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_3/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_3/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_3/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_3/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_3/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaSplitIBMPythonSaafSupportUS_us-south_1024.json"
+                - function:
+                    name: "index2_3"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_3/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_3/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_3/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
+                - parallel:
+                    name: "parALN2_3"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_3/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_3/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_3/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_2_3"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_3/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_3/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:ap-northeast-1:170392512081:function:bwaAlnR1AWSPythonT"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_2_3"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_3/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_3/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:us-east-1:170392512081:function:bwaAln21024SA"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_3/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_3/R1,parALN0_3/R2"
+                - function:
+                    name: "sampe2_3"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_3/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
+              - section:
+                - function:
+                    name: "split3_3"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_3/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_3/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_3/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_3/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_3/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_3/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_3/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaSplitIBMPythonSaafSupportUS_us-south_1024.json"
+                - function:
+                    name: "index3_3"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_3/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_3/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_3/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
+                - parallel:
+                    name: "parALN3_3"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_3/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_3/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_3/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_3_3"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_3/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_3/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:ap-northeast-1:170392512081:function:bwaAlnR1AWSPythonT"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_3_3"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_3/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_3/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:us-east-1:170392512081:function:bwaAln21024SA"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_3/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_3/R1,parALN0_3/R2"
+                - function:
+                    name: "sampe3_3"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_3/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
+              dataOuts:
+              - name: "sam"
+                type: "collection"
+                source: "sampe0_3/sam"
+          - function:
+              name: "merge_3"
+              type: "mergeType"
+              dataIns:
+              - name: "sam"
+                type: "collection"
+                source: "pSample_3/sam"
+              dataOuts:
+              - name: "samMerged"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaMergeIBMPythonSaafSupportUS_us-south_1024.json"
+          - function:
+              name: "sort_3"
+              type: "sortType"
+              dataIns:
+              - name: "samMerged"
+                type: "string"
+                source: "merge_3/samMerged"
+              dataOuts:
+              - name: "bam"
+                type: "string"
+              - name: "bambai"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-east.functions.appdomain.cloud/api/v1/web/afcl_Washington/default/bwaSortIBMPythonSaafSupportUS_us-east_1024.json"
+          dataOuts:
+          - name: "bam"
+            type: "collection"
+            source: "sort_3/bam"
+          - name: "bambai"
+            type: "collection"
+            source: "sort_3/bambai"
+          constraints:
+          - name: "concurrency"
+            value: "24"
+    - section:
+      - parallelFor:
+          name: "pForSamples_4"
+          dataIns:
+          - name: "fastaFolder"
+            type: "string"
+            source: "parallelized_pForSamples/fastaFolder"
+            constraints:
+            - name: "distribution"
+              value: "BLOCK(1)"
+          - name: "fasta"
+            type: "string"
+            source: "parallelized_pForSamples/fasta"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R1"
+            type: "string"
+            source: "parallelized_pForSamples/R1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "R2"
+            type: "string"
+            source: "parallelized_pForSamples/R2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex1"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex2"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex3"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folderindex4"
+            type: "number"
+            source: "parallelized_pForSamples/folderindex4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders1"
+            type: "string"
+            source: "parallelized_pForSamples/folders1"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders2"
+            type: "string"
+            source: "parallelized_pForSamples/folders2"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders3"
+            type: "string"
+            source: "parallelized_pForSamples/folders3"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "folders4"
+            type: "string"
+            source: "parallelized_pForSamples/folders4"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          - name: "chunks"
+            type: "number"
+            source: "parallelized_pForSamples/chunks"
+            constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
+          loopCounter:
+            type: "number"
+            from: "48"
+            to: "60"
+            step: "1"
+          loopBody:
+          - parallel:
+              name: "pSample_4"
+              dataIns:
+              - name: "fastaFolder"
+                type: "string"
+                source: "pForSamples_4/fastaFolder"
+              - name: "fasta"
+                type: "string"
+                source: "pForSamples_4/fasta"
+              - name: "R1"
+                type: "string"
+                source: "pForSamples_4/R1"
+              - name: "R2"
+                type: "string"
+                source: "pForSamples_4/R2"
+              - name: "folderindex1"
+                type: "number"
+                source: "pForSamples_4/folderindex1"
+              - name: "folderindex2"
+                type: "number"
+                source: "pForSamples_4/folderindex2"
+              - name: "folderindex3"
+                type: "number"
+                source: "pForSamples_4/folderindex3"
+              - name: "folderindex4"
+                type: "number"
+                source: "pForSamples_4/folderindex4"
+              - name: "folders1"
+                type: "string"
+                source: "pForSamples_4/folders1"
+              - name: "folders2"
+                type: "string"
+                source: "pForSamples_4/folders2"
+              - name: "folders3"
+                type: "string"
+                source: "pForSamples_4/folders3"
+              - name: "folders4"
+                type: "string"
+                source: "pForSamples_4/folders4"
+              - name: "chunks"
+                type: "number"
+                source: "pForSamples_4/chunks"
+              parallelBody:
+              - section:
+                - function:
+                    name: "split0_4"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_4/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_4/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_4/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_4/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_4/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_4/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_4/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaSplitIBMPythonSaafSupportUS_us-south_1024.json"
+                - function:
+                    name: "index0_4"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_4/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_4/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_4/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
+                - parallel:
+                    name: "parALN0_4"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_4/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_4/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_4/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_0_4"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_4/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_4/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaAlnR1IBMPythonSaafSupportUS_us-south_1024.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_0_4"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_4/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_4/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:us-east-1:170392512081:function:bwaAln21024SA"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_4/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_4/R1,parALN0_4/R2"
+                - function:
+                    name: "sampe0_4"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_4/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
+              - section:
+                - function:
+                    name: "split1_4"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_4/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_4/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_4/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_4/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_4/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_4/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_4/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaSplitIBMPythonSaafSupportUS_us-south_1024.json"
+                - function:
+                    name: "index1_4"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split1_4/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split1_4/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split1_4/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
+                - parallel:
+                    name: "parALN1_4"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index1_4/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index1_4/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index1_4/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_1_4"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_4/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN1_4/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaAlnR1IBMPythonSaafSupportUS_us-south_1024.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_1_4"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN1_4/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN1_4/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:us-east-1:170392512081:function:bwaAln21024SA"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_4/fastaIndexed,bwaAlnR1_1/aln1,bwaAlnR2_1/aln2,parALN1_4/R1,parALN1_4/R2"
+                - function:
+                    name: "sampe1_4"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN1_4/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
+              - section:
+                - function:
+                    name: "split2_4"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_4/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_4/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_4/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_4/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_4/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_4/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_4/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaSplitIBMPythonSaafSupportUS_us-south_1024.json"
+                - function:
+                    name: "index2_4"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_4/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_4/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_4/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
+                - parallel:
+                    name: "parALN2_4"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_4/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_4/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_4/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_2_4"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_4/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_4/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaAlnR1IBMPythonSaafSupportUS_us-south_1024.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_2_4"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_4/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_4/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:us-east-1:170392512081:function:bwaAln21024SA"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_4/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_4/R1,parALN0_4/R2"
+                - function:
+                    name: "sampe2_4"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_4/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
+              - section:
+                - function:
+                    name: "split3_4"
+                    type: "splitType"
+                    dataIns:
+                    - name: "fastaFolder"
+                      type: "string"
+                      source: "pSample_4/fastaFolder"
+                    - name: "fasta"
+                      type: "string"
+                      source: "pSample_4/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "pSample_4/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "pSample_4/R2"
+                      passing: true
+                    - name: "folders"
+                      type: "string"
+                      source: "pSample_4/folders1"
+                    - name: "folderindex"
+                      type: "number"
+                      source: "pSample_4/folderindex1"
+                    - name: "chunks"
+                      type: "number"
+                      source: "pSample_4/chunks"
+                    dataOuts:
+                    - name: "fasta"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaSplitIBMPythonSaafSupportUS_us-south_1024.json"
+                - function:
+                    name: "index3_4"
+                    type: "bwaIndexType"
+                    dataIns:
+                    - name: "fasta"
+                      type: "string"
+                      source: "split0_4/fasta"
+                    - name: "R1"
+                      type: "string"
+                      source: "split0_4/R1"
+                      passing: true
+                    - name: "R2"
+                      type: "string"
+                      source: "split0_4/R2"
+                      passing: true
+                    dataOuts:
+                    - name: "fastaIndexed"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaIndex1024"
+                - parallel:
+                    name: "parALN3_4"
+                    dataIns:
+                    - name: "fastaIndexed"
+                      type: "string"
+                      source: "index0_4/fastaIndexed"
+                    - name: "R1"
+                      type: "string"
+                      source: "index0_4/R1"
+                    - name: "R2"
+                      type: "string"
+                      source: "index0_4/R2"
+                    parallelBody:
+                    - section:
+                      - function:
+                          name: "bwaAlnR1_3_4"
+                          type: "bwaAlnR1Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_4/fastaIndexed"
+                          - name: "R1"
+                            type: "string"
+                            source: "parALN0_4/R1"
+                          dataOuts:
+                          - name: "aln1"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaAlnR1IBMPythonSaafSupportUS_us-south_1024.json"
+                    - section:
+                      - function:
+                          name: "bwaAlnR2_3_4"
+                          type: "bwaAlnR2Type"
+                          dataIns:
+                          - name: "fastaIndexed"
+                            type: "string"
+                            source: "parALN0_4/fastaIndexed"
+                          - name: "R2"
+                            type: "string"
+                            source: "parALN0_4/R2"
+                          dataOuts:
+                          - name: "aln2"
+                            type: "string"
+                          properties:
+                          - name: "resource"
+                            value: "arn:aws:lambda:us-east-1:170392512081:function:bwaAln21024SA"
+                    dataOuts:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_4/fastaIndexed,bwaAlnR1_0/aln1,bwaAlnR2_0/aln2,parALN0_4/R1,parALN0_4/R2"
+                - function:
+                    name: "sampe3_4"
+                    type: "bwaSampeType"
+                    dataIns:
+                    - name: "aln"
+                      type: "collection"
+                      source: "parALN0_4/aln"
+                    dataOuts:
+                    - name: "sam"
+                      type: "string"
+                    properties:
+                    - name: "resource"
+                      value: "arn:aws:lambda:us-east-1:170392512081:function:terrabwaSampe1024"
+              dataOuts:
+              - name: "sam"
+                type: "collection"
+                source: "sampe0_4/sam"
+          - function:
+              name: "merge_4"
+              type: "mergeType"
+              dataIns:
+              - name: "sam"
+                type: "collection"
+                source: "pSample_4/sam"
+              dataOuts:
+              - name: "samMerged"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-south.functions.appdomain.cloud/api/v1/web/afcl_Dallas/default/bwaMergeIBMPythonSaafSupportUS_us-south_1024.json"
+          - function:
+              name: "sort_4"
+              type: "sortType"
+              dataIns:
+              - name: "samMerged"
+                type: "string"
+                source: "merge_4/samMerged"
+              dataOuts:
+              - name: "bam"
+                type: "string"
+              - name: "bambai"
+                type: "string"
+              properties:
+              - name: "resource"
+                value: "https://us-east.functions.appdomain.cloud/api/v1/web/afcl_Washington/default/bwaSortIBMPythonSaafSupportUS_us-east_1024.json"
+          dataOuts:
+          - name: "bam"
+            type: "collection"
+            source: "sort_4/bam"
+          - name: "bambai"
+            type: "collection"
+            source: "sort_4/bambai"
+          constraints:
+          - name: "concurrency"
+            value: "24"
+    dataOuts:
+    - name: "OutVal"
+      type: "collection"
+      source: "pForSamples_0/bam,pForSamples_1/bam,pForSamples_2/bam,pForSamples_3/bam,pForSamples_4/bam"
+      constraints:
+      - name: "aggregation"
+        value: "+"
+dataOuts:
+- name: "bam"
+  type: "collection"
+  source: "pForSamples/bam"
+- name: "bambai"
+  type: "collection"
+  source: "pForSamples/bambai"
