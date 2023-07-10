@@ -1,13 +1,22 @@
 package at.ac.uibk.scheduler.api.node;
 
 import at.ac.uibk.core.functions.AtomicFunction;
+import at.ac.uibk.core.functions.objects.DataIns;
+import at.ac.uibk.core.functions.objects.DataOutsAtomic;
 import at.ac.uibk.metadata.api.model.functions.FunctionDeployment;
+
+import javax.xml.crypto.Data;
+import java.util.List;
 
 public class AtomicFunctionNode extends FunctionNode {
 
     private AtomicFunction atomicFunction;
 
     private FunctionDeployment schedulingDecision;
+
+    private List<DataIns> scheduledDataIns;
+
+    private List<DataOutsAtomic> scheduledDataOuts;
 
     public AtomicFunctionNode(final AtomicFunction function) {
         super();
@@ -28,5 +37,21 @@ public class AtomicFunctionNode extends FunctionNode {
 
     public void setSchedulingDecision(FunctionDeployment schedulingDecision) {
         this.schedulingDecision = schedulingDecision;
+    }
+
+    public List<DataIns> getScheduledDataIns() {
+        return scheduledDataIns;
+    }
+
+    public void setScheduledDataIns(List<DataIns> scheduledDataIns) {
+        this.scheduledDataIns = scheduledDataIns;
+    }
+
+    public List<DataOutsAtomic> getScheduledDataOuts() {
+        return scheduledDataOuts;
+    }
+
+    public void setScheduledDataOuts(List<DataOutsAtomic> scheduledDataOuts) {
+        this.scheduledDataOuts = scheduledDataOuts;
     }
 }

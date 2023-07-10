@@ -5,6 +5,9 @@ import at.ac.uibk.core.Workflow;
 import at.ac.uibk.core.functions.AtomicFunction;
 import at.ac.uibk.core.functions.Parallel;
 import at.ac.uibk.core.functions.ParallelFor;
+import at.ac.uibk.core.functions.objects.DataIns;
+import at.ac.uibk.core.functions.objects.DataOuts;
+import at.ac.uibk.core.functions.objects.DataOutsAtomic;
 import at.ac.uibk.core.functions.objects.PropertyConstraint;
 import at.ac.uibk.metadata.api.model.DetailedProvider;
 import at.ac.uibk.metadata.api.model.functions.FunctionDeployment;
@@ -108,7 +111,7 @@ public class WorkflowConverter {
                                         .map(DetailedProvider::getMaxConcurrency)
                                         .orElse(Integer.MAX_VALUE));
 
-                        WorkflowConverter.writeSchedulingDecision(workFlowFn, graphFn.getSchedulingDecision());
+                        WorkflowConverter.writeSchedulingDecision(workFlowFn, graphFn.getSchedulingDecision(), graphFn.getScheduledDataIns(), graphFn.getScheduledDataOuts());
                     }
                     idx++;
 
@@ -215,11 +218,14 @@ public class WorkflowConverter {
         WorkflowConverter.writeConstraint(function, propertyConstraint);
     }
 
-    private static void writeSchedulingDecision(final AtomicFunction function, final FunctionDeployment deployment) {
+    private static void writeSchedulingDecision(final AtomicFunction function, final FunctionDeployment deployment, final List<DataIns> dataIns, final List<DataOutsAtomic> dataOuts) {
         final PropertyConstraint propertyConstraint = new PropertyConstraint();
         propertyConstraint.setName("resource");
         propertyConstraint.setValue(deployment.getKmsArn());
         WorkflowConverter.writeProperty(function, propertyConstraint);
+        // TODO write dataOuts
+        function.setDataIns(dataIns);
+        function.setDataOuts(dataOuts);
     }
 
     private static void writeConstraint(final Function function, final PropertyConstraint constraint) {
@@ -245,7 +251,7 @@ public class WorkflowConverter {
     }
 
     private static void writeSchedulingDecision(final AtomicFunctionNode atomicFunctionNode) {
-        WorkflowConverter.writeSchedulingDecision(atomicFunctionNode.getAtomicFunction(), atomicFunctionNode.getSchedulingDecision());
+        WorkflowConverter.writeSchedulingDecision(atomicFunctionNode.getAtomicFunction(), atomicFunctionNode.getSchedulingDecision(), atomicFunctionNode.getScheduledDataIns(), atomicFunctionNode.getScheduledDataOuts());
     }
 
     private static List<FunctionNode> flatten(final List<GraphPath<FunctionNode, Communication>> loopBody) {

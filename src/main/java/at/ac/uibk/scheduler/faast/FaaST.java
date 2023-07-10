@@ -1,5 +1,8 @@
 package at.ac.uibk.scheduler.faast;
 
+import at.ac.uibk.core.functions.objects.DataIns;
+import at.ac.uibk.core.functions.objects.DataOuts;
+import at.ac.uibk.core.functions.objects.DataOutsAtomic;
 import at.ac.uibk.metadata.api.model.DetailedProvider;
 import at.ac.uibk.metadata.api.model.FunctionType;
 import at.ac.uibk.metadata.api.model.Region;
@@ -169,6 +172,34 @@ public class FaaST implements SchedulingAlgorithm {
             for (final FunctionDeploymentResource resource : resources) {
                 final double currentEst = this.calculateEarliestStartTimeOnResource(resource, graph, toSchedule);
                 final double currentEft = currentEst + resource.getDeployment().getAvgRTT();
+
+                // TODO calculate DTT here and add to currentEft
+                // subtract DTT from avgRTT, or is it already without DTT???
+
+                List<DataIns> dataIns = toSchedule.getAtomicFunction().getDataIns();
+                // check dataIns for storage input urls
+                // extract region from storage; input needs region, #files and size of files (we could also query it dynamically maybe?)
+                // calculate DL time by calculating from storage region to resource region
+                
+                // is dataOuts even needed, or can everything be controlled by dataIns?
+                List<DataOutsAtomic> dataOuts = toSchedule.getAtomicFunction().getDataOuts();
+                // dataOuts need #files and size of files
+                // generate list of available storage outputs
+                // calculate UT by calculating from resource region to storage region
+                // TODO extend dataOuts to include field for value (or include in properties?)
+                // would need to modify EE/FunctionNode.java line 205 to add constant value to functionOutputs
+                // TODO or set the value of the input of the next function that consumes this dataOut?
+                // set storage bucket and region to dataOut by writing to 'value' field
+                // replace dataOut in list of dataOuts
+                // set modified list of dataOuts to scheduling decision/resource
+                resource.setDataOuts(dataOuts);
+
+                // output destination might be incoming as dataIns? Set value there instead of source, might be needed in function code
+                resource.setDataIns(dataIns);
+
+                // add DT and UT to currentEft
+
+
                 if (decisionLogger != null) {
                     decisionLogger.saveEntry(resource, currentEst, currentEft);
                 }
@@ -195,6 +226,8 @@ public class FaaST implements SchedulingAlgorithm {
 
             schedulingDecision.getPlannedExecutions().add(new PlannedExecution(minEst, minEft));
             toSchedule.setSchedulingDecision(schedulingDecision.getDeployment());
+            toSchedule.setScheduledDataIns(schedulingDecision.getDataIns());
+            toSchedule.setScheduledDataOuts(schedulingDecision.getDataOuts());
             toSchedule.setAlgorithmInfo(new PlannedExecution(minEst, minEft));
 
             final Region region = MetadataCache.get().getRegionFor(schedulingDecision.getDeployment()).orElseThrow();
