@@ -79,6 +79,15 @@ public class DataOutsAtomic {
     }
 
     /**
+     * Converts the object to a {@link DataOuts} object
+     *
+     * @return a new {@link DataOuts} object
+     */
+    public DataOuts toDataOuts() {
+        return new DataOuts(this);
+    }
+
+    /**
      * Getter and Setter
      */
 

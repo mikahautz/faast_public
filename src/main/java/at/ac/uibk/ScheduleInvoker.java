@@ -3,6 +3,7 @@ package at.ac.uibk;
 import at.ac.uibk.core.Workflow;
 import at.ac.uibk.scheduler.ScheduleRequestHandler;
 import at.ac.uibk.scheduler.SchedulerRequestInput;
+import at.ac.uibk.scheduler.storeless.DataFlowStore;
 import at.ac.uibk.util.ObjectMapperUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -44,6 +45,8 @@ public class ScheduleInvoker {
              final OutputStream os = Files.newOutputStream(OUTPUT, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
 
             Workflow wf = OBJECT_MAPPER.readValue(is, Workflow.class);
+
+            DataFlowStore.storeInputsAndOutputs(wf);
 
             final SchedulerRequestInput input = new SchedulerRequestInput();
 

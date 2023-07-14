@@ -1,5 +1,6 @@
 package at.ac.uibk.core.functions.objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -64,11 +65,22 @@ public class DataOuts {
     private List<PropertyConstraint> propertiesDataOuts;
 
     /**
-     * {@link PropertyConstraint} (which must be fulfilled
-     * by underlying workflow runtime environment)
+     * {@link PropertyConstraint} (which must be fulfilled by underlying workflow runtime environment)
      */
     @JsonProperty("constraints")
     private List<PropertyConstraint> constraintsDataOuts;
+
+    /**
+     * Used to store the scheduled value determined by {@link at.ac.uibk.scheduler.storeless.StoreLess}
+     */
+    @JsonIgnore
+    private String value;
+
+    /**
+     * Used to store the scheduled values determined by {@link at.ac.uibk.scheduler.storeless.StoreLess}
+     */
+    @JsonIgnore
+    private List<String> values;
 
     public DataOuts() {
     }
@@ -84,6 +96,20 @@ public class DataOuts {
         this.outputName = outputName;
         this.outputType = outputType;
         this.outputSource = outputSource;
+    }
+
+    /**
+     * Constructs a new object from the given {@link DataOutsAtomic} object
+     *
+     * @param dataOutsAtomic to construct the object from
+     */
+    public DataOuts(DataOutsAtomic dataOutsAtomic) {
+        this.outputName = dataOutsAtomic.getName();
+        this.outputType = dataOutsAtomic.getType();
+        this.outputSaveTo = dataOutsAtomic.getSaveto();
+        this.passingDataOuts = dataOutsAtomic.getPassing();
+        this.propertiesDataOuts = dataOutsAtomic.getProperties();
+        this.constraintsDataOuts = dataOutsAtomic.getConstraints();
     }
 
     /**
@@ -158,6 +184,22 @@ public class DataOuts {
     @JsonProperty("constraints")
     public void setConstraints(List<PropertyConstraint> constraints) {
         this.constraintsDataOuts = constraints;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public List<String> getValues() {
+        return values;
+    }
+
+    public void setValues(List<String> values) {
+        this.values = values;
     }
 
     @Override
