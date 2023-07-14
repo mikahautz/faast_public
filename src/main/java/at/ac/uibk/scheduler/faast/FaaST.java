@@ -1,8 +1,5 @@
 package at.ac.uibk.scheduler.faast;
 
-import at.ac.uibk.core.functions.objects.DataIns;
-import at.ac.uibk.core.functions.objects.DataOuts;
-import at.ac.uibk.core.functions.objects.DataOutsAtomic;
 import at.ac.uibk.metadata.api.model.DetailedProvider;
 import at.ac.uibk.metadata.api.model.FunctionType;
 import at.ac.uibk.metadata.api.model.Region;
@@ -13,13 +10,14 @@ import at.ac.uibk.scheduler.api.SchedulingAlgorithm;
 import at.ac.uibk.scheduler.api.SchedulingException;
 import at.ac.uibk.scheduler.api.node.AtomicFunctionNode;
 import at.ac.uibk.scheduler.api.node.FunctionNode;
-import org.apache.commons.collections4.ComparatorUtils;
+import at.ac.uibk.util.DecisionLogger;
+import at.ac.uibk.util.HeftUtil;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
-import org.jgrapht.graph.EdgeReversedGraph;
-import org.jgrapht.traverse.BreadthFirstIterator;
-import org.jgrapht.traverse.TopologicalOrderIterator;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -55,79 +53,6 @@ public class FaaST implements SchedulingAlgorithm {
                 .collect(Collectors.toSet());
     }
 
-    private void initializeBRankMap(final DefaultDirectedWeightedGraph<FunctionNode, Communication> graph) {
-        graph.vertexSet()
-                .forEach(node -> {
-                    if (node instanceof AtomicFunctionNode) {
-                        this.bRankMap.put(node, this.calculateAverageTime((AtomicFunctionNode) node));
-                    } else {
-                        this.bRankMap.put(node, 0D);
-                    }
-                });
-
-        final EdgeReversedGraph<FunctionNode, Communication> reversedGraph = new EdgeReversedGraph<>(graph);
-
-        final TopologicalOrderIterator<FunctionNode, Communication> backwardsIterator =
-                new TopologicalOrderIterator<>(reversedGraph);
-
-        if (!backwardsIterator.hasNext()) {
-            throw new SchedulingException("Graph is empty");
-        }
-
-        //calculate brank
-        while (backwardsIterator.hasNext()) {
-            final FunctionNode currentNode = backwardsIterator.next();
-
-            final double maxCostOfParents = reversedGraph.incomingEdgesOf(currentNode)
-                    .stream()
-                    .map(reversedGraph::getEdgeSource)
-                    .mapToDouble(this.bRankMap::get)
-                    .max().orElse(0D);
-
-            final double newCost = this.bRankMap.get(currentNode) + maxCostOfParents;
-            this.bRankMap.put(currentNode, newCost);
-        }
-    }
-
-    private double calculateEarliestStartTimeOnResource(
-            final FunctionDeploymentResource resource,
-            final DefaultDirectedWeightedGraph<FunctionNode, Communication> graph,
-            final AtomicFunctionNode atomicFunctionNode) {
-
-        final FunctionNode startNodeOfGraph = new BreadthFirstIterator<>(graph).next();
-
-        final PlannedExecution plannedExecution = startNodeOfGraph.getAlgorithmInfoTyped();
-
-        if (plannedExecution == null) {
-            startNodeOfGraph.setAlgorithmInfo(new PlannedExecution(0D, 0D));
-        }
-
-        final double latestEFT = graph.incomingEdgesOf(atomicFunctionNode)
-                .stream()
-                .map(graph::getEdgeSource)
-                .flatMap(p -> p.<PlannedExecution>getFirstAlgorithmInfosTypedFromAllPredecessors(graph))
-                .mapToDouble(PlannedExecution::getEndTime)
-                .max().orElse(0D);
-
-        final Optional<Region> region = MetadataCache.get().getRegionFor(resource.getDeployment());
-
-        final var res = resource.getEligibleRunTimesAfter(latestEFT)
-                .stream()
-                .filter(runtime -> Math.abs(runtime.getLeft() - runtime.getRight()) > resource.getDeployment().getAvgRTT())
-                .map(runtime ->
-                        region.flatMap(r ->
-                                        this.regionConcurrencyChecker.getEarliestRuntimeInRegionBetween(r, runtime.getLeft(),
-                                                runtime.getRight(), resource.getDeployment().getAvgRTT()))
-                                .orElse(Double.MAX_VALUE))
-                .mapToDouble(f -> f)
-                .min();
-
-        if (res.isEmpty() || res.getAsDouble() >= Double.MAX_VALUE) {
-            throw new SchedulingException("unexpected error when searching for eligible runtimes");
-        } else {
-            return res.getAsDouble();
-        }
-    }
 
     @Override
     public void schedule(final DefaultDirectedWeightedGraph<FunctionNode, Communication> graph) {
@@ -137,16 +62,9 @@ public class FaaST implements SchedulingAlgorithm {
             decisionLogger = new DecisionLogger(Logger.getLogger(Logger.GLOBAL_LOGGER_NAME));
         }
 
-        this.initializeBRankMap(graph);
+        HeftUtil.initializeBRankMap(this, graph, this.bRankMap);
 
-        final Iterator<AtomicFunctionNode> bRankIterator =
-                this.bRankMap.entrySet()
-                        .stream()
-                        .sorted(ComparatorUtils.reversedComparator(Map.Entry.comparingByValue()))
-                        .map(Map.Entry::getKey)
-                        .filter(AtomicFunctionNode.class::isInstance)
-                        .map(AtomicFunctionNode.class::cast)
-                        .iterator();
+        final Iterator<AtomicFunctionNode> bRankIterator = HeftUtil.getBRankIterator(this.bRankMap);
 
         double maxEft = 0;
 
@@ -170,38 +88,12 @@ public class FaaST implements SchedulingAlgorithm {
             FunctionDeploymentResource schedulingDecision = null;
 
             for (final FunctionDeploymentResource resource : resources) {
-                final double currentEst = this.calculateEarliestStartTimeOnResource(resource, graph, toSchedule);
+                final double currentEst = HeftUtil.calculateEarliestStartTimeOnResource(resource, graph, toSchedule,
+                        resource.getDeployment(), resource.getDeployment().getAvgRTT(), this.regionConcurrencyChecker);
                 final double currentEft = currentEst + resource.getDeployment().getAvgRTT();
 
-                // TODO calculate DTT here and add to currentEft
-                // subtract DTT from avgRTT, or is it already without DTT???
-
-                List<DataIns> dataIns = toSchedule.getAtomicFunction().getDataIns();
-                // check dataIns for storage input urls
-                // extract region from storage; input needs region, #files and size of files (we could also query it dynamically maybe?)
-                // calculate DL time by calculating from storage region to resource region
-                
-                // is dataOuts even needed, or can everything be controlled by dataIns?
-                List<DataOutsAtomic> dataOuts = toSchedule.getAtomicFunction().getDataOuts();
-                // dataOuts need #files and size of files
-                // generate list of available storage outputs
-                // calculate UT by calculating from resource region to storage region
-                // TODO extend dataOuts to include field for value (or include in properties?)
-                // would need to modify EE/FunctionNode.java line 205 to add constant value to functionOutputs
-                // TODO or set the value of the input of the next function that consumes this dataOut?
-                // set storage bucket and region to dataOut by writing to 'value' field
-                // replace dataOut in list of dataOuts
-                // set modified list of dataOuts to scheduling decision/resource
-                resource.setDataOuts(dataOuts);
-
-                // output destination might be incoming as dataIns? Set value there instead of source, might be needed in function code
-                resource.setDataIns(dataIns);
-
-                // add DT and UT to currentEft
-
-
                 if (decisionLogger != null) {
-                    decisionLogger.saveEntry(resource, currentEst, currentEft);
+                    decisionLogger.saveEntry(resource.getDeployment().getKmsArn(), currentEst, currentEft);
                 }
 
                 if (schedulingDecision == null) {
@@ -221,13 +113,11 @@ public class FaaST implements SchedulingAlgorithm {
             }
 
             if (decisionLogger != null) {
-                decisionLogger.log(schedulingDecision, toSchedule);
+                decisionLogger.log(schedulingDecision.getDeployment().getKmsArn(), toSchedule);
             }
 
             schedulingDecision.getPlannedExecutions().add(new PlannedExecution(minEst, minEft));
             toSchedule.setSchedulingDecision(schedulingDecision.getDeployment());
-            toSchedule.setScheduledDataIns(schedulingDecision.getDataIns());
-            toSchedule.setScheduledDataOuts(schedulingDecision.getDataOuts());
             toSchedule.setAlgorithmInfo(new PlannedExecution(minEst, minEft));
 
             final Region region = MetadataCache.get().getRegionFor(schedulingDecision.getDeployment()).orElseThrow();
@@ -244,7 +134,8 @@ public class FaaST implements SchedulingAlgorithm {
 
     }
 
-    private double calculateAverageTime(final AtomicFunctionNode node) {
+    @Override
+    public double calculateAverageTime(final AtomicFunctionNode node) {
 
         final String atomicFunctionTypeName = node.getAtomicFunction().getType();
 

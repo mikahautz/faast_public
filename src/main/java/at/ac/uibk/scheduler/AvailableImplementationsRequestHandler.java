@@ -3,6 +3,7 @@ package at.ac.uibk.scheduler;
 import at.ac.uibk.scheduler.api.SchedulingAlgorithm;
 import at.ac.uibk.scheduler.faast.FaaST;
 import at.ac.uibk.scheduler.random.Random;
+import at.ac.uibk.scheduler.storeless.StoreLess;
 import at.ac.uibk.util.StreamingLambda;
 import com.amazonaws.services.lambda.runtime.Context;
 
@@ -24,6 +25,6 @@ public class AvailableImplementationsRequestHandler implements StreamingLambda<V
     }
 
     public static List<Class<? extends SchedulingAlgorithm>> getAvailableAlgorithms() {
-        return List.of(FaaST.class, Random.class);
+        return List.of(FaaST.class, Random.class, StoreLess.class);
     }
 }

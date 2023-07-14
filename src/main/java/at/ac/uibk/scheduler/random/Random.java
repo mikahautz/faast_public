@@ -83,4 +83,14 @@ public class Random implements SchedulingAlgorithm {
 
     }
 
+    /**
+     * Not needed for random scheduling.
+     *
+     * @return 0
+     */
+    @Override
+    public double calculateAverageTime(AtomicFunctionNode node) {
+        return 0;
+    }
+
 }
