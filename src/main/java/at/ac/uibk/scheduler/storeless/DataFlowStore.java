@@ -6,6 +6,7 @@ import at.ac.uibk.core.functions.*;
 import at.ac.uibk.core.functions.objects.DataIns;
 import at.ac.uibk.core.functions.objects.DataOuts;
 import at.ac.uibk.core.functions.objects.DataOutsAtomic;
+import at.ac.uibk.core.functions.objects.PropertyConstraint;
 import at.ac.uibk.scheduler.api.SchedulingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -84,6 +86,63 @@ public class DataFlowStore {
         } else {
             throw new SchedulingException("Unable to find value for '" + source + "'");
         }
+    }
+
+    public static void updateValuesInStore(String functionName, DataIns dataIn, List<DataOutsAtomic> dataOuts, boolean universalDestination) {
+        String value = dataIn.getValue();
+        DataFlowStore.getDataIns().get(functionName + "/" + dataIn.getName()).setValue(value);
+
+        if (universalDestination) {
+            for (DataOutsAtomic dataOut : dataOuts) {
+                DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName()).setValue(value);
+            }
+        // we have multiple dataIns that specify an output destination, therefore we have to check which dataOut uses which output destination
+        } else {
+            final Supplier<SchedulingException> propertyIsMissing =
+                    () -> new SchedulingException(dataIn.getName() + ": Multiple different outputs are defined, but property 'uploadId' is missing!");
+
+            Integer uploadId = null;
+            List<PropertyConstraint> properties = dataIn.getProperties();
+            if (properties != null && !properties.isEmpty()) {
+                for (PropertyConstraint property : properties) {
+                    if (property.getName().equalsIgnoreCase("uploadId")) {
+                        try {
+                            uploadId = Integer.parseInt(property.getValue());
+                        } catch (NumberFormatException e) {
+                            throw new SchedulingException(dataIn.getName() + ": Property 'uploadId' has to be an Integer!");
+                        }
+                    }
+                }
+                if (uploadId == null) {
+                    throw propertyIsMissing.get();
+                }
+            } else {
+                throw propertyIsMissing.get();
+            }
+
+            for (DataOutsAtomic dataOut : dataOuts) {
+                if (hasUploadId(dataOut, uploadId)) {
+                    DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName()).setValue(value);
+                }
+            }
+        }
+    }
+
+    private static boolean hasUploadId(DataOutsAtomic dataOut, Integer id) {
+        List<PropertyConstraint> properties = dataOut.getProperties();
+        try {
+            if (properties != null && !properties.isEmpty()) {
+                for (PropertyConstraint property : properties) {
+                    if (property.getName().equalsIgnoreCase("uploadId") &&
+                            Integer.parseInt(property.getValue()) == id) {
+                        return true;
+                    }
+                }
+            }
+        } catch (NumberFormatException e) {
+            throw new SchedulingException(dataOut.getName() + ": Property 'uploadId' has to be an Integer!");
+        }
+        return false;
     }
 
     private static void handleFunction(Function f) {

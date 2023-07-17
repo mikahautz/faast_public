@@ -83,46 +83,32 @@ public class StoreLess implements SchedulingAlgorithm {
 
             final FunctionType functionType = MetadataCache.get().getFunctionTypesByName().get(functionTypeName);
 
-//            final Set<FunctionDeploymentResource> resources = this.scaledResourcesByFunctionType.get(functionType);
-
-            // get set of resources per region (up to concurrency limit), so e.g. 100 resources in region A
-            // get set of FDs per type
-            // loop through FDs
-            // per FD, get region of deployment, and query set of region-resources for that region, and return only
-            //     those resources that are distinct (deployment != deployment and plannedExecutions != plannedExecutions)
-
             double minEst = Double.MAX_VALUE;
             double minEft = Double.MAX_VALUE;
 
             final Supplier<SchedulingException> noScheduleFoundException =
                     () -> new SchedulingException("cannot schedule function for name " + toSchedule.getAtomicFunction().getName());
 
-//            FunctionDeploymentResource schedulingDecision = null;
             RegionResource schedulingDecision = null;
             FunctionDeployment scheduledFunctionDeployment = null;
             List<DataIns> scheduledDataIns = null;
-            List<DataOutsAtomic> scheduledDataOuts = null;
 
             for (final FunctionDeployment fd : functionDeploymentsByFunctionType.get(functionType)) {
                 final Region region = MetadataCache.get().getRegionFor(fd).orElseThrow();
                 RegionResource resource = getBestRegionResource(region);
 
+                // no suitable resource could be found for this deployment
                 if (resource == null) {
                     continue;
                 }
 
-                // TODO dataOuts dont have to be updated, since the outputDestination has to be given in the input anyways,
-                // so we only need to update the input field that specifies the output destination???
-                // TODO but the DataFlowStore.dataOuts need to be updated with the value for the dataOut storage
-
                 List<DataIns> dataIns = toSchedule.getAtomicFunction().getDataIns();
-                List<DataIns> toDownloadInputs = extractDownloadDataIns(dataIns); // list of dataIns where DLs have to occur
-                List<DataIns> toUploadInputs = extractUploadDataIns(dataIns); // list of dataIns that specify where the output should be stored
+                List<DataIns> toDownloadInputs = extractDownloadDataIns(dataIns);
 
                 Double downloadTime = 0D;
                 for (DataIns dataIn : toDownloadInputs) {
                     int fileAmount = extractFileAmount(dataIn);
-                    double fileSize = extractFilSize(dataIn);
+                    double fileSize = extractFileSize(dataIn);
 
                     String url = null;
 
@@ -137,39 +123,28 @@ public class StoreLess implements SchedulingAlgorithm {
                     downloadTime += dlTime;
                 }
 
-
+                List<DataIns> toUploadInputs = extractUploadDataIns(dataIns); // list of dataIns that specify where the output should be stored
                 Double uploadTime = 0D;
                 // TODO loop through storage regions, calculate in each iteration the upload time
                 // perform all of the steps below within the loop, so compare in each iteration if it is the min for the current fd
                 // at the end of the loop we have to compare the intermediate result of the fd + DTT with the fastest
 
-                // upload time = 0
-                // loop through toLookAtOutput
-                for (int j = 0; j < 2; j++) {
-                    // output_min = double.max
+                for (DataIns dataIn : toUploadInputs) {
+                    Double upMin = Double.MAX_VALUE;
                     // loop through storages
                     for (int i = 0; i < 2; i++) {
                         // get region
                         // calculate upload time
                         // check if upload time is < than output_min
                         // if yes, update time and set element of toLookAtOutput with new value and write back to list
+                        dataIn.setValue("TODO-INSERT-URL-HERE");
                     }
                     // upload time += output_min
+
+                    // TODO move further down, after next if check?
+                    DataFlowStore.updateValuesInStore(toSchedule.getAtomicFunction().getName(), dataIn,
+                            toSchedule.getAtomicFunction().getDataOuts(), toUploadInputs.size() == 1);
                 }
-
-
-                // is dataOuts even needed, or can everything be controlled by dataIns?
-                // TODO maybe delete value and values field again
-                List<DataOutsAtomic> dataOuts = toSchedule.getAtomicFunction().getDataOuts();
-                // dataOuts need #files and size of files
-                // generate list of available storage outputs
-                // calculate UT by calculating from resource region to storage region
-                // TODO extend dataOuts to include field for value (or include in properties?)
-                // would need to modify EE/FunctionNode.java line 205 to add constant value to functionOutputs
-                // TODO or set the value of the input of the next function that consumes this dataOut?
-                // set storage bucket and region to dataOut by writing to 'value' field
-                // replace dataOut in list of dataOuts
-                // set modified list of dataOuts to scheduling decision/resource
 
                 double RTT = fd.getAvgRTT() + downloadTime + uploadTime;
 
@@ -189,10 +164,9 @@ public class StoreLess implements SchedulingAlgorithm {
                     scheduledFunctionDeployment = fd;
                     minEst = currentEst;
                     minEft = currentEft;
-                    // dataIns.addBack(toLookAtOutputs)
+                    // TODO dataIns.addBack(toLookAtOutputs)
                     scheduledDataIns = dataIns;
-                    scheduledDataOuts = dataOuts; // TODO is needed?
-                    // DataFlowStore.updateDataOutValue
+                    // TODO DataFlowStore.updateDataOutValue
                 }
             }
 
@@ -207,7 +181,6 @@ public class StoreLess implements SchedulingAlgorithm {
             schedulingDecision.getPlannedExecutions().add(new PlannedExecution(minEst, minEft));
             toSchedule.setSchedulingDecision(scheduledFunctionDeployment);
             toSchedule.setScheduledDataIns(scheduledDataIns);
-            toSchedule.setScheduledDataOuts(scheduledDataOuts);
             toSchedule.setAlgorithmInfo(new PlannedExecution(minEst, minEft));
 
             final Region region = MetadataCache.get().getRegionFor(scheduledFunctionDeployment).orElseThrow();
@@ -245,8 +218,7 @@ public class StoreLess implements SchedulingAlgorithm {
     }
 
     private int extractFileAmount(DataIns dataIn) {
-        List<PropertyConstraint> properties = dataIn.getProperties();
-        for (PropertyConstraint property : properties) {
+        for (PropertyConstraint property : dataIn.getProperties()) {
             if (property.getName().equalsIgnoreCase("fileamount")) {
                 try {
                     return Integer.parseInt(property.getValue());
@@ -258,9 +230,8 @@ public class StoreLess implements SchedulingAlgorithm {
         throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' is missing!");
     }
 
-    private double extractFilSize(DataIns dataIn) {
-        List<PropertyConstraint> properties = dataIn.getProperties();
-        for (PropertyConstraint property : properties) {
+    private double extractFileSize(DataIns dataIn) {
+        for (PropertyConstraint property : dataIn.getProperties()) {
             if (property.getName().equalsIgnoreCase("filesize")) {
                 String value = property.getValue();
                 value = value.replace(",", ".");

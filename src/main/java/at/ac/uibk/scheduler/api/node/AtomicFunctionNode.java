@@ -16,8 +16,6 @@ public class AtomicFunctionNode extends FunctionNode {
 
     private List<DataIns> scheduledDataIns;
 
-    private List<DataOutsAtomic> scheduledDataOuts;
-
     public AtomicFunctionNode(final AtomicFunction function) {
         super();
         this.atomicFunction = function;
@@ -45,13 +43,5 @@ public class AtomicFunctionNode extends FunctionNode {
 
     public void setScheduledDataIns(List<DataIns> scheduledDataIns) {
         this.scheduledDataIns = scheduledDataIns;
-    }
-
-    public List<DataOutsAtomic> getScheduledDataOuts() {
-        return scheduledDataOuts;
-    }
-
-    public void setScheduledDataOuts(List<DataOutsAtomic> scheduledDataOuts) {
-        this.scheduledDataOuts = scheduledDataOuts;
     }
 }
