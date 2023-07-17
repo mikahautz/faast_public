@@ -2,6 +2,7 @@ package at.ac.uibk.scheduler.storeless;
 
 import at.ac.uibk.core.functions.objects.DataIns;
 import at.ac.uibk.core.functions.objects.DataOutsAtomic;
+import at.ac.uibk.core.functions.objects.PropertyConstraint;
 import at.ac.uibk.metadata.api.model.DetailedProvider;
 import at.ac.uibk.metadata.api.model.FunctionType;
 import at.ac.uibk.metadata.api.model.Region;
@@ -114,29 +115,26 @@ public class StoreLess implements SchedulingAlgorithm {
                 // so we only need to update the input field that specifies the output destination???
                 // TODO but the DataFlowStore.dataOuts need to be updated with the value for the dataOut storage
 
-                Double downloadTime = 0D;
-                // TODO calculate directly here, with the given dataIns (we know the region) and the fd
-
-                // TODO check dataIns, for each dataIn that has a property set with amountFiles and fileSize, do:
-                // check if the input itself has a value in its value field, if not:
-                // check DataFlowStore.dataOuts for a value with the given key (and if exists) of the dataIns.source field, if not:
-                // check DataFlowStore.dataIns for the input.getSource if exists, and if the value field of the object has some data
-
-                // it might be that the needed dataOut does not have a value set, then take the source field and trace back
-                // in the dataOuts and dataIns until a value has been found (for all source elements if it is a list)
-
                 List<DataIns> dataIns = toSchedule.getAtomicFunction().getDataIns();
-                // check dataIns for storage input urls
-                // extract region from storage; input needs region, #files and size of files (we could also query it dynamically maybe?)
-                // calculate DL time by calculating from storage region to resource region
-                // List<DataIns> toLookAtInput = getDataInsWithPropertiesSet(); // list of dataIns where DLs have to occur
-                // List<DataIns> toLookAtOutput = getDataOutsWithPropertiesSet(); // list of dataIns that specify where the output should be stored
+                List<DataIns> toDownloadInputs = extractDownloadDataIns(dataIns); // list of dataIns where DLs have to occur
+                List<DataIns> toUploadInputs = extractUploadDataIns(dataIns); // list of dataIns that specify where the output should be stored
 
-                // loop through all dataIns that have a property (toLookAtInput)
-                // total dl time = 0
-                for (int i = 0; i < 2; i++) {
-                    // calculate dl time
-                    // total dl time += dl time
+                Double downloadTime = 0D;
+                for (DataIns dataIn : toDownloadInputs) {
+                    int fileAmount = extractFileAmount(dataIn);
+                    double fileSize = extractFilSize(dataIn);
+
+                    String url = null;
+
+                    if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
+                        url = dataIn.getValue();
+                    } else {
+                        url = DataFlowStore.getDataInValue(dataIn.getSource(), false);
+                    }
+
+                    // TODO apply model here
+                    double dlTime = 0;
+                    downloadTime += dlTime;
                 }
 
 
@@ -224,6 +222,77 @@ public class StoreLess implements SchedulingAlgorithm {
             decisionLogger.getLogger().info("Calculated makespan: " + maxEft);
         }
 
+    }
+
+    private List<DataIns> extractDownloadDataIns(List<DataIns> dataIns) {
+        List<DataIns> dlDataIns = new ArrayList<>();
+        for (DataIns dataIn : dataIns) {
+            if (hasDownloadPropertySet(dataIn)) {
+                dlDataIns.add(dataIn);
+            }
+        }
+        return dlDataIns;
+    }
+
+    private List<DataIns> extractUploadDataIns(List<DataIns> dataIns) {
+        List<DataIns> upDataIns = new ArrayList<>();
+        for (DataIns dataIn : dataIns) {
+            if (hasUploadPropertySet(dataIn)) {
+                upDataIns.add(dataIn);
+            }
+        }
+        return upDataIns;
+    }
+
+    private int extractFileAmount(DataIns dataIn) {
+        List<PropertyConstraint> properties = dataIn.getProperties();
+        for (PropertyConstraint property : properties) {
+            if (property.getName().equalsIgnoreCase("fileamount")) {
+                try {
+                    return Integer.parseInt(property.getValue());
+                } catch (NumberFormatException e) {
+                    throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' has to be an Integer!");
+                }
+            }
+        }
+        throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' is missing!");
+    }
+
+    private double extractFilSize(DataIns dataIn) {
+        List<PropertyConstraint> properties = dataIn.getProperties();
+        for (PropertyConstraint property : properties) {
+            if (property.getName().equalsIgnoreCase("filesize")) {
+                String value = property.getValue();
+                value = value.replace(",", ".");
+                try {
+                    return Double.parseDouble(value);
+                } catch (NumberFormatException e) {
+                    throw new SchedulingException("Property 'filesize' has to be a Double!");
+                }
+            }
+        }
+        throw new SchedulingException(dataIn.getName() + ": Property 'filesize' is missing!");
+    }
+
+    private boolean hasDownloadPropertySet(DataIns dataIn) {
+        return hasPropertySet(dataIn, "datatransfer", "download");
+    }
+
+    private boolean hasUploadPropertySet(DataIns dataIn) {
+        return hasPropertySet(dataIn, "datatransfer", "upload");
+    }
+
+    private boolean hasPropertySet(DataIns dataIn, String propertyName, String propertyValue) {
+        List<PropertyConstraint> properties = dataIn.getProperties();
+        if (properties != null && !properties.isEmpty()) {
+            for (PropertyConstraint property : properties) {
+                if (property.getName().equalsIgnoreCase(propertyName) &&
+                        property.getValue().equalsIgnoreCase(propertyValue)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private RegionResource getBestRegionResource(Region region) {

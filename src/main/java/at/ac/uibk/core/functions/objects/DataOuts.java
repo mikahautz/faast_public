@@ -76,12 +76,6 @@ public class DataOuts {
     @JsonIgnore
     private String value;
 
-    /**
-     * Used to store the scheduled values determined by {@link at.ac.uibk.scheduler.storeless.StoreLess}
-     */
-    @JsonIgnore
-    private List<String> values;
-
     public DataOuts() {
     }
 
@@ -192,14 +186,6 @@ public class DataOuts {
 
     public void setValue(String value) {
         this.value = value;
-    }
-
-    public List<String> getValues() {
-        return values;
-    }
-
-    public void setValues(List<String> values) {
-        this.values = values;
     }
 
     @Override

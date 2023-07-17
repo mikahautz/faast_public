@@ -6,15 +6,14 @@ import at.ac.uibk.core.functions.*;
 import at.ac.uibk.core.functions.objects.DataIns;
 import at.ac.uibk.core.functions.objects.DataOuts;
 import at.ac.uibk.core.functions.objects.DataOutsAtomic;
+import at.ac.uibk.scheduler.api.SchedulingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -31,6 +30,60 @@ public class DataFlowStore {
         addDataOuts(wf.getName(), wf.getDataOuts());
         wf.getWorkflowBody().forEach(DataFlowStore::handleFunction);
         storeInputJson(input, wf.getName());
+    }
+
+    public static String getDataInValue(String source, boolean isRecursive) {
+        // if the source is a list of sources
+        if (source.contains(",")) {
+            List<String> values = new ArrayList<>();
+            if (source.startsWith("[") && source.endsWith("]")) {
+                source = source.substring(1, source.length() - 1);
+            }
+            String[] sources = source.split(",");
+            for (String s : sources) {
+                values.add(getDataInValue(source, true));
+            }
+            // if any value is null, meaning no value could be found for that source
+            if (values.stream().anyMatch(Objects::isNull)) {
+                throw new SchedulingException("Could not find values for all sources: '" + source + "'");
+            } else {
+                String result = values.toString();
+                return result.substring(1, result.length() - 1);
+            }
+        }
+
+        if (dataOuts.containsKey(source)) {
+            DataOuts dataOut = dataOuts.get(source);
+            if (dataOut.getValue() != null && !dataOut.getValue().isEmpty()) {
+                return dataOut.getValue();
+            } else {
+                // go through all possible dataOuts, if we get a value then use it, otherwise continue with the dataIns
+                String result = getDataInValue(dataOut.getSource(), true);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+
+        if (dataIns.containsKey(source)) {
+            DataIns dataIn = dataIns.get(source);
+            if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
+                return dataIn.getValue();
+            } else {
+                String result = getDataInValue(dataIn.getSource(), true);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+
+        // if it is a recursive call, we just might have finished looping through all possibilities of one path
+        if (isRecursive) {
+            return null;
+            // if it is the initial call, we were unable to find a value for the source
+        } else {
+            throw new SchedulingException("Unable to find value for '" + source + "'");
+        }
     }
 
     private static void handleFunction(Function f) {
