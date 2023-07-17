@@ -110,24 +110,58 @@ public class StoreLess implements SchedulingAlgorithm {
                     continue;
                 }
 
+                // TODO dataOuts dont have to be updated, since the outputDestination has to be given in the input anyways,
+                // so we only need to update the input field that specifies the output destination???
+                // TODO but the DataFlowStore.dataOuts need to be updated with the value for the dataOut storage
+
                 Double downloadTime = 0D;
-                Double uploadTime = 0D;
+                // TODO calculate directly here, with the given dataIns (we know the region) and the fd
 
-                double RTT = fd.getAvgRTT() + downloadTime + uploadTime;
+                // TODO check dataIns, for each dataIn that has a property set with amountFiles and fileSize, do:
+                // check if the input itself has a value in its value field, if not:
+                // check DataFlowStore.dataOuts for a value with the given key (and if exists) of the dataIns.source field, if not:
+                // check DataFlowStore.dataIns for the input.getSource if exists, and if the value field of the object has some data
 
-                final double currentEst = HeftUtil.calculateEarliestStartTimeOnResource(resource, graph, toSchedule,
-                        fd, RTT, this.regionConcurrencyChecker);
-                final double currentEft = currentEst + RTT;
-
-                // TODO calculate DTT here and add to currentEft
-                // subtract DTT from avgRTT, or is it already without DTT???
+                // it might be that the needed dataOut does not have a value set, then take the source field and trace back
+                // in the dataOuts and dataIns until a value has been found (for all source elements if it is a list)
 
                 List<DataIns> dataIns = toSchedule.getAtomicFunction().getDataIns();
                 // check dataIns for storage input urls
                 // extract region from storage; input needs region, #files and size of files (we could also query it dynamically maybe?)
                 // calculate DL time by calculating from storage region to resource region
+                // List<DataIns> toLookAtInput = getDataInsWithPropertiesSet(); // list of dataIns where DLs have to occur
+                // List<DataIns> toLookAtOutput = getDataOutsWithPropertiesSet(); // list of dataIns that specify where the output should be stored
+
+                // loop through all dataIns that have a property (toLookAtInput)
+                // total dl time = 0
+                for (int i = 0; i < 2; i++) {
+                    // calculate dl time
+                    // total dl time += dl time
+                }
+
+
+                Double uploadTime = 0D;
+                // TODO loop through storage regions, calculate in each iteration the upload time
+                // perform all of the steps below within the loop, so compare in each iteration if it is the min for the current fd
+                // at the end of the loop we have to compare the intermediate result of the fd + DTT with the fastest
+
+                // upload time = 0
+                // loop through toLookAtOutput
+                for (int j = 0; j < 2; j++) {
+                    // output_min = double.max
+                    // loop through storages
+                    for (int i = 0; i < 2; i++) {
+                        // get region
+                        // calculate upload time
+                        // check if upload time is < than output_min
+                        // if yes, update time and set element of toLookAtOutput with new value and write back to list
+                    }
+                    // upload time += output_min
+                }
+
 
                 // is dataOuts even needed, or can everything be controlled by dataIns?
+                // TODO maybe delete value and values field again
                 List<DataOutsAtomic> dataOuts = toSchedule.getAtomicFunction().getDataOuts();
                 // dataOuts need #files and size of files
                 // generate list of available storage outputs
@@ -138,25 +172,29 @@ public class StoreLess implements SchedulingAlgorithm {
                 // set storage bucket and region to dataOut by writing to 'value' field
                 // replace dataOut in list of dataOuts
                 // set modified list of dataOuts to scheduling decision/resource
-//                resource.setDataOuts(dataOuts);
 
-                // output destination might be incoming as dataIns? Set value there instead of source, might be needed in function code
-//                resource.setDataIns(dataIns);
+                double RTT = fd.getAvgRTT() + downloadTime + uploadTime;
 
-                // add DT and UT to currentEft
+                final double currentEst = HeftUtil.calculateEarliestStartTimeOnResource(resource, graph, toSchedule,
+                        fd, RTT, this.regionConcurrencyChecker);
+                final double currentEft = currentEst + RTT;
 
 
                 if (decisionLogger != null) {
                     decisionLogger.saveEntry(fd.getKmsArn(), currentEst, currentEft);
                 }
 
+                // compare if current eft < min eft
+                // if yes, update all values as below, write back toLookAtOutputs to dataIns and update dataflowstore dataout value
                 if (schedulingDecision == null || currentEft < minEft) {
                     schedulingDecision = resource;
                     scheduledFunctionDeployment = fd;
                     minEst = currentEst;
                     minEft = currentEft;
+                    // dataIns.addBack(toLookAtOutputs)
                     scheduledDataIns = dataIns;
-                    scheduledDataOuts = dataOuts;
+                    scheduledDataOuts = dataOuts; // TODO is needed?
+                    // DataFlowStore.updateDataOutValue
                 }
             }
 
