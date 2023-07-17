@@ -6,7 +6,12 @@ import at.ac.uibk.core.functions.*;
 import at.ac.uibk.core.functions.objects.DataIns;
 import at.ac.uibk.core.functions.objects.DataOuts;
 import at.ac.uibk.core.functions.objects.DataOutsAtomic;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +25,12 @@ public class DataFlowStore {
     private static final Map<String, DataIns> dataIns = new HashMap<>();
 
     private static final Map<String, DataOuts> dataOuts = new HashMap<>();
-    ;
 
-    public static void storeInputsAndOutputs(Workflow wf) {
+    public static void storeInputsAndOutputs(Workflow wf, Path input) throws Exception {
         addDataIns(wf.getName(), wf.getDataIns());
         addDataOuts(wf.getName(), wf.getDataOuts());
         wf.getWorkflowBody().forEach(DataFlowStore::handleFunction);
+        storeInputJson(input, wf.getName());
     }
 
     private static void handleFunction(Function f) {
@@ -67,6 +72,39 @@ public class DataFlowStore {
             for (DataOuts d : dataOutsList) {
                 dataOuts.put(name + "/" + d.getName(), d);
             }
+        }
+    }
+
+    private static void storeInputJson(Path input, String workflowName) throws Exception {
+        if (input != null) {
+            try (final InputStream is = Files.newInputStream(input)) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                Map<String, Object> jsonMap = objectMapper.readValue(is, new TypeReference<Map<String, Object>>() {
+                });
+
+                for (Map.Entry<String, Object> entry : jsonMap.entrySet()) {
+                    String key = entry.getKey();
+                    Object value = entry.getValue();
+
+                    if (value instanceof String) {
+                        addValueToDataIns(workflowName, key, value.toString());
+                    } else if (value instanceof List) {
+                        String stringValue = value.toString();
+                        stringValue = stringValue.substring(1, stringValue.length() - 1);
+                        addValueToDataIns(workflowName, key, stringValue);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void addValueToDataIns(String workflowName, String key, String value) {
+        key = workflowName + "/" + key;
+        if (dataIns.containsKey(key)) {
+            DataIns dataIn = dataIns.get(key);
+            dataIn.setValue(value);
+
+            dataIns.put(key, dataIn);
         }
     }
 

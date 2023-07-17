@@ -5,6 +5,7 @@ import at.ac.uibk.scheduler.ScheduleRequestHandler;
 import at.ac.uibk.scheduler.SchedulerRequestInput;
 import at.ac.uibk.scheduler.storeless.DataFlowStore;
 import at.ac.uibk.util.ObjectMapperUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
@@ -12,6 +13,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,9 +25,9 @@ public class ScheduleInvoker {
     /**
      * Must correspond to the class name of any {@link at.ac.uibk.scheduler.api.SchedulingAlgorithm}
      */
-    private static final String ALGORITHM = "FaaST";
+    private static final String ALGORITHM = "StoreLess";
 
-    private static final int PREDICTOR_COUNT = 60;
+    private static final int PREDICTOR_COUNT = 2;
 
     /**
      * Use {@link ObjectMapperUtil#YAML_MAPPER} if your input is in yaml
@@ -37,6 +39,7 @@ public class ScheduleInvoker {
      * Specify in and output files, will be AFCL and CFCL workflows
      */
     private static final Path INPUT = Path.of("BWAfaast4_afcl.yaml");
+    private static final Path INPUT_JSON = Path.of("input.json");
     private static final Path OUTPUT = Path.of("BWAfaast4_cfcl.yaml");
 
     public static void main(String[] args) throws Exception {
@@ -46,7 +49,7 @@ public class ScheduleInvoker {
 
             Workflow wf = OBJECT_MAPPER.readValue(is, Workflow.class);
 
-            DataFlowStore.storeInputsAndOutputs(wf);
+            DataFlowStore.storeInputsAndOutputs(wf, INPUT_JSON);
 
             final SchedulerRequestInput input = new SchedulerRequestInput();
 
