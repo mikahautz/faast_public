@@ -1,7 +1,6 @@
 package at.ac.uibk.scheduler.storeless;
 
 import at.ac.uibk.core.functions.objects.DataIns;
-import at.ac.uibk.core.functions.objects.DataOutsAtomic;
 import at.ac.uibk.core.functions.objects.PropertyConstraint;
 import at.ac.uibk.metadata.api.model.DetailedProvider;
 import at.ac.uibk.metadata.api.model.FunctionType;
@@ -140,10 +139,6 @@ public class StoreLess implements SchedulingAlgorithm {
                         dataIn.setValue("TODO-INSERT-URL-HERE");
                     }
                     // upload time += output_min
-
-                    // TODO move further down, after next if check?
-                    DataFlowStore.updateValuesInStore(toSchedule.getAtomicFunction().getName(), dataIn,
-                            toSchedule.getAtomicFunction().getDataOuts(), toUploadInputs.size() == 1);
                 }
 
                 double RTT = fd.getAvgRTT() + downloadTime + uploadTime;
@@ -157,16 +152,14 @@ public class StoreLess implements SchedulingAlgorithm {
                     decisionLogger.saveEntry(fd.getKmsArn(), currentEst, currentEft);
                 }
 
-                // compare if current eft < min eft
-                // if yes, update all values as below, write back toLookAtOutputs to dataIns and update dataflowstore dataout value
                 if (schedulingDecision == null || currentEft < minEft) {
                     schedulingDecision = resource;
                     scheduledFunctionDeployment = fd;
                     minEst = currentEst;
                     minEft = currentEft;
-                    // TODO dataIns.addBack(toLookAtOutputs)
                     scheduledDataIns = dataIns;
-                    // TODO DataFlowStore.updateDataOutValue
+                    DataFlowStore.updateValuesInStore(toSchedule.getAtomicFunction().getName(), toUploadInputs,
+                            toSchedule.getAtomicFunction().getDataOuts(), toUploadInputs.size() == 1);
                 }
             }
 
@@ -197,6 +190,13 @@ public class StoreLess implements SchedulingAlgorithm {
 
     }
 
+    /**
+     * Get all dataIns that have the {@code datatransfer} property set to {@code download}
+     *
+     * @param dataIns the list of dataIns to check
+     *
+     * @return a list of dataIns that should be downloaded
+     */
     private List<DataIns> extractDownloadDataIns(List<DataIns> dataIns) {
         List<DataIns> dlDataIns = new ArrayList<>();
         for (DataIns dataIn : dataIns) {
@@ -207,6 +207,13 @@ public class StoreLess implements SchedulingAlgorithm {
         return dlDataIns;
     }
 
+    /**
+     * Get all dataIns that have the {@code datatransfer} property set to {@code upload}
+     *
+     * @param dataIns the list of dataIns to check
+     *
+     * @return a list of dataIns that should be uploaded
+     */
     private List<DataIns> extractUploadDataIns(List<DataIns> dataIns) {
         List<DataIns> upDataIns = new ArrayList<>();
         for (DataIns dataIn : dataIns) {
@@ -217,6 +224,13 @@ public class StoreLess implements SchedulingAlgorithm {
         return upDataIns;
     }
 
+    /**
+     * Extracts the value for the {@code fileamount} property of a {@link DataIns}.
+     *
+     * @param dataIn to extract the property
+     *
+     * @return the extracted number
+     */
     private int extractFileAmount(DataIns dataIn) {
         for (PropertyConstraint property : dataIn.getProperties()) {
             if (property.getName().equalsIgnoreCase("fileamount")) {
@@ -230,6 +244,13 @@ public class StoreLess implements SchedulingAlgorithm {
         throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' is missing!");
     }
 
+    /**
+     * Extracts the value for the {@code filesize} property of a {@link DataIns}.
+     *
+     * @param dataIn to extract the property
+     *
+     * @return the extracted number
+     */
     private double extractFileSize(DataIns dataIn) {
         for (PropertyConstraint property : dataIn.getProperties()) {
             if (property.getName().equalsIgnoreCase("filesize")) {
@@ -245,14 +266,37 @@ public class StoreLess implements SchedulingAlgorithm {
         throw new SchedulingException(dataIn.getName() + ": Property 'filesize' is missing!");
     }
 
+    /**
+     * Checks if the {@code dataIn} has the property {@code datatransfer} set to {@code download}.
+     *
+     * @param dataIn to check
+     *
+     * @return true if it has it set, false otherwise
+     */
     private boolean hasDownloadPropertySet(DataIns dataIn) {
         return hasPropertySet(dataIn, "datatransfer", "download");
     }
 
+    /**
+     * Checks if the {@code dataIn} has the property {@code datatransfer} set to {@code upload}.
+     *
+     * @param dataIn to check
+     *
+     * @return true if it has it set, false otherwise
+     */
     private boolean hasUploadPropertySet(DataIns dataIn) {
         return hasPropertySet(dataIn, "datatransfer", "upload");
     }
 
+    /**
+     * Checks if the {@code dataIn} has the property {@code propertyName} set to {@code propertyValue}.
+     *
+     * @param dataIn        to check
+     * @param propertyName  the name of the property
+     * @param propertyValue the value of the property
+     *
+     * @return true if it has it set, false otherwise
+     */
     private boolean hasPropertySet(DataIns dataIn, String propertyName, String propertyValue) {
         List<PropertyConstraint> properties = dataIn.getProperties();
         if (properties != null && !properties.isEmpty()) {
@@ -266,6 +310,13 @@ public class StoreLess implements SchedulingAlgorithm {
         return false;
     }
 
+    /**
+     * Finds the most suitable {@link RegionResource} for a given {@link Region}, that has the lowest starting time.
+     *
+     * @param region to check for
+     *
+     * @return the resource with the lowest starting time
+     */
     private RegionResource getBestRegionResource(Region region) {
         final Set<RegionResource> resources = new HashSet<>(scaledResourcesByRegion.get(region));
         RegionResource resource = null;

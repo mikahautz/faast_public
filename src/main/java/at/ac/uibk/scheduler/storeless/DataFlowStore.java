@@ -23,10 +23,25 @@ import java.util.stream.Collectors;
  */
 public class DataFlowStore {
 
+    /**
+     * A map containing all dataIns of the whole workflow.
+     */
     private static final Map<String, DataIns> dataIns = new HashMap<>();
 
+    /**
+     * A map containing all dataOuts of the whole workflow.
+     */
     private static final Map<String, DataOuts> dataOuts = new HashMap<>();
 
+    /**
+     * Stores all data flow inputs and outputs of the workflow and the input json file in a map. The map is used to
+     * access the storage destinations of (intermediate) data.
+     *
+     * @param wf    the workflow to get the dataIns and dataOuts
+     * @param input the path to the input json
+     *
+     * @throws Exception if the input json path is not found
+     */
     public static void storeInputsAndOutputs(Workflow wf, Path input) throws Exception {
         addDataIns(wf.getName(), wf.getDataIns());
         addDataOuts(wf.getName(), wf.getDataOuts());
@@ -34,6 +49,14 @@ public class DataFlowStore {
         storeInputJson(input, wf.getName());
     }
 
+    /**
+     * Get the concrete value of a {@link DataIns} object identified by the {@code source}.
+     *
+     * @param source      to identify the {@link DataIns} object
+     * @param isRecursive determines if the method is called recursively
+     *
+     * @return the value of the {@link DataIns} object as a string
+     */
     public static String getDataInValue(String source, boolean isRecursive) {
         // if the source is a list of sources
         if (source.contains(",")) {
@@ -88,46 +111,66 @@ public class DataFlowStore {
         }
     }
 
-    public static void updateValuesInStore(String functionName, DataIns dataIn, List<DataOutsAtomic> dataOuts, boolean universalDestination) {
-        String value = dataIn.getValue();
-        DataFlowStore.getDataIns().get(functionName + "/" + dataIn.getName()).setValue(value);
+    /**
+     * Updates the {@link #dataOuts} map with concrete values given by {@code dataIns}.
+     *
+     * @param functionName         the name of the function whose dataOuts should be updated
+     * @param dataIns              the dataIns that contain the values to be updated
+     * @param dataOuts             the dataOuts to be updated
+     * @param universalDestination if all dataOuts should be updated with the same destination, or if individual
+     *                             destinations are given
+     */
+    public static void updateValuesInStore(String functionName, List<DataIns> dataIns, List<DataOutsAtomic> dataOuts, boolean universalDestination) {
 
-        if (universalDestination) {
-            for (DataOutsAtomic dataOut : dataOuts) {
-                DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName()).setValue(value);
-            }
-        // we have multiple dataIns that specify an output destination, therefore we have to check which dataOut uses which output destination
-        } else {
-            final Supplier<SchedulingException> propertyIsMissing =
-                    () -> new SchedulingException(dataIn.getName() + ": Multiple different outputs are defined, but property 'uploadId' is missing!");
+        for (DataIns dataIn : dataIns) {
+            String value = dataIn.getValue();
+            DataFlowStore.getDataIns().get(functionName + "/" + dataIn.getName()).setValue(value);
 
-            Integer uploadId = null;
-            List<PropertyConstraint> properties = dataIn.getProperties();
-            if (properties != null && !properties.isEmpty()) {
-                for (PropertyConstraint property : properties) {
-                    if (property.getName().equalsIgnoreCase("uploadId")) {
-                        try {
-                            uploadId = Integer.parseInt(property.getValue());
-                        } catch (NumberFormatException e) {
-                            throw new SchedulingException(dataIn.getName() + ": Property 'uploadId' has to be an Integer!");
+            if (universalDestination) {
+                for (DataOutsAtomic dataOut : dataOuts) {
+                    DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName()).setValue(value);
+                }
+                // we have multiple dataIns that specify an output destination, therefore we have to check which dataOut uses which output destination
+            } else {
+                final Supplier<SchedulingException> propertyIsMissing =
+                        () -> new SchedulingException(dataIn.getName() + ": Multiple different outputs are defined, but property 'uploadId' is missing!");
+
+                Integer uploadId = null;
+                List<PropertyConstraint> properties = dataIn.getProperties();
+                if (properties != null && !properties.isEmpty()) {
+                    for (PropertyConstraint property : properties) {
+                        if (property.getName().equalsIgnoreCase("uploadId")) {
+                            try {
+                                uploadId = Integer.parseInt(property.getValue());
+                            } catch (NumberFormatException e) {
+                                throw new SchedulingException(dataIn.getName() + ": Property 'uploadId' has to be an Integer!");
+                            }
                         }
                     }
-                }
-                if (uploadId == null) {
+                    if (uploadId == null) {
+                        throw propertyIsMissing.get();
+                    }
+                } else {
                     throw propertyIsMissing.get();
                 }
-            } else {
-                throw propertyIsMissing.get();
-            }
 
-            for (DataOutsAtomic dataOut : dataOuts) {
-                if (hasUploadId(dataOut, uploadId)) {
-                    DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName()).setValue(value);
+                for (DataOutsAtomic dataOut : dataOuts) {
+                    if (hasUploadId(dataOut, uploadId)) {
+                        DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName()).setValue(value);
+                    }
                 }
             }
         }
     }
 
+    /**
+     * Checks if a {@link DataOutsAtomic} object has a property {@code uploadId} with the given id.
+     *
+     * @param dataOut the object to check
+     * @param id      the id to check for
+     *
+     * @return true if the object has the id, false otherwise
+     */
     private static boolean hasUploadId(DataOutsAtomic dataOut, Integer id) {
         List<PropertyConstraint> properties = dataOut.getProperties();
         try {
@@ -145,6 +188,11 @@ public class DataFlowStore {
         return false;
     }
 
+    /**
+     * Check the given function for its type and add all dataIns and dataOuts to the respective maps.
+     *
+     * @param f the function to check
+     */
     private static void handleFunction(Function f) {
         if (f instanceof AtomicFunction) {
             addDataIns(f.getName(), ((AtomicFunction) f).getDataIns());
@@ -171,6 +219,12 @@ public class DataFlowStore {
         }
     }
 
+    /**
+     * Add the given dataIns to the map of dataIns.
+     *
+     * @param name        the name of the parent
+     * @param dataInsList the list of dataIns to add to the map
+     */
     private static void addDataIns(String name, List<DataIns> dataInsList) {
         if (dataInsList != null) {
             for (DataIns d : dataInsList) {
@@ -179,6 +233,12 @@ public class DataFlowStore {
         }
     }
 
+    /**
+     * Add the given dataOuts to the map of dataOuts.
+     *
+     * @param name         the name of the parent
+     * @param dataOutsList the list of dataOuts to add to the map
+     */
     private static void addDataOuts(String name, List<DataOuts> dataOutsList) {
         if (dataOutsList != null) {
             for (DataOuts d : dataOutsList) {
@@ -187,6 +247,14 @@ public class DataFlowStore {
         }
     }
 
+    /**
+     * Stores the input json in the {@link #dataIns} map.
+     *
+     * @param input        the path to the input json file
+     * @param workflowName the name of the workflow
+     *
+     * @throws Exception if the input json file is not found
+     */
     private static void storeInputJson(Path input, String workflowName) throws Exception {
         if (input != null) {
             try (final InputStream is = Files.newInputStream(input)) {
@@ -210,6 +278,13 @@ public class DataFlowStore {
         }
     }
 
+    /**
+     * Adds a concrete value to an object in {@link #dataIns} identified by {@code key}.
+     *
+     * @param workflowName the name of the workflow
+     * @param key          the key to identify the object in the map
+     * @param value        the concrete value to set
+     */
     private static void addValueToDataIns(String workflowName, String key, String value) {
         key = workflowName + "/" + key;
         if (dataIns.containsKey(key)) {
