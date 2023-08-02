@@ -2,20 +2,21 @@ package at.ac.uibk.scheduler.storeless;
 
 import at.ac.uibk.metadata.api.model.DataTransfer;
 import at.ac.uibk.metadata.api.model.Region;
+import at.ac.uibk.metadata.api.model.enums.Provider;
 import at.ac.uibk.scheduler.api.MetadataCache;
 import at.ac.uibk.scheduler.api.SchedulingException;
 
 import java.util.List;
 
 public class DataTransferTimeModel {
-    
+
     /**
      * Calculates the download time using the given parameters.
      *
      * @param functionRegionId the id of the function region
      * @param bucketUrl        the url of the storage bucket to download the data from
      * @param fileAmount       the amount of files to be downloaded
-     * @param fileSize         the total size of all files that should be downloaded
+     * @param fileSize         the total size of all files to be downloaded
      *
      * @return the calculated download time
      */
@@ -23,6 +24,19 @@ public class DataTransferTimeModel {
         long storageRegionId = getRegionId(bucketUrl);
         DataTransfer dataTransfer = getDataTransferEntry(MetadataCache.get().getDataTransfersDownload(), functionRegionId, storageRegionId);
 
+        return fileAmount * dataTransfer.getLatency() + ((fileSize / dataTransfer.getBandwidth()) * 1000);
+    }
+
+    /**
+     * Calculates the upload time using the given parameters.
+     *
+     * @param dataTransfer the data transfer object to use
+     * @param fileAmount   the amount of files to be uploaded
+     * @param fileSize     the total size of all files to be uploaded
+     *
+     * @return the calculated upload time
+     */
+    public static double calculateUploadTime(DataTransfer dataTransfer, int fileAmount, double fileSize) {
         return fileAmount * dataTransfer.getLatency() + ((fileSize / dataTransfer.getBandwidth()) * 1000);
     }
 
@@ -35,8 +49,17 @@ public class DataTransferTimeModel {
      * @return the id of the identified region
      */
     private static Long getRegionId(String bucketUrl) {
+        String provider;
+        if (bucketUrl.startsWith("s3://") || bucketUrl.startsWith("arn:aws:s3") || bucketUrl.contains(".s3.amazonaws.com")) {
+            provider = "AWS";
+        } else if (bucketUrl.startsWith("gs://") || bucketUrl.startsWith("https://storage.googleapis.com/")) {
+            provider = "Google";
+        } else {
+            throw new SchedulingException(bucketUrl + " is not an AWS or GCP bucket");
+        }
+
         return MetadataCache.get().getRegions().stream()
-                .filter(r -> bucketUrl.contains(r.getRegion()))
+                .filter(r -> r.getProvider().equals(Provider.valueOf(provider)) && bucketUrl.contains(r.getRegion()))
                 .mapToLong(Region::getId)
                 .findFirst()
                 .orElseThrow(() -> new SchedulingException("Bucket URL '" + bucketUrl + "' does not contain any region-code"));

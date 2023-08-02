@@ -2,9 +2,11 @@ package at.ac.uibk.scheduler.storeless;
 
 import at.ac.uibk.core.functions.objects.DataIns;
 import at.ac.uibk.core.functions.objects.PropertyConstraint;
+import at.ac.uibk.metadata.api.model.DataTransfer;
 import at.ac.uibk.metadata.api.model.DetailedProvider;
 import at.ac.uibk.metadata.api.model.FunctionType;
 import at.ac.uibk.metadata.api.model.Region;
+import at.ac.uibk.metadata.api.model.enums.Provider;
 import at.ac.uibk.metadata.api.model.functions.FunctionDeployment;
 import at.ac.uibk.scheduler.api.Communication;
 import at.ac.uibk.scheduler.api.MetadataCache;
@@ -96,6 +98,11 @@ public class StoreLess implements SchedulingAlgorithm {
                 final Region region = MetadataCache.get().getRegionFor(fd).orElseThrow();
                 RegionResource resource = getBestRegionResource(region);
 
+                // get all data transfer entries for the upload that have the current function region
+                List<DataTransfer> uploadDataTransfers = MetadataCache.get().getDataTransfersUpload().stream()
+                        .filter(entry -> Objects.equals(entry.getFunctionRegionID(), fd.getRegionId()))
+                        .collect(Collectors.toList());
+
                 // no suitable resource could be found for this deployment
                 if (resource == null) {
                     continue;
@@ -103,6 +110,12 @@ public class StoreLess implements SchedulingAlgorithm {
 
                 List<DataIns> dataIns = toSchedule.getAtomicFunction().getDataIns();
                 List<DataIns> toDownloadInputs = extractDownloadDataIns(dataIns);
+                List<DataIns> toUploadInputs = extractUploadDataIns(dataIns); // list of dataIns that specify where the output should be stored
+
+                // check if any data needs to be down- or uploaded, and if the function region exists in the data transfer entries
+                if ((!toDownloadInputs.isEmpty() || !toUploadInputs.isEmpty()) && !dataTransferEntryExistsFor(fd)) {
+                    continue;
+                }
 
                 Double downloadTime = 0D;
                 for (DataIns dataIn : toDownloadInputs) {
@@ -120,23 +133,23 @@ public class StoreLess implements SchedulingAlgorithm {
                     downloadTime += DataTransferTimeModel.calculateDownloadTime(fd.getRegionId(), url, fileAmount, fileSize);
                 }
 
-                List<DataIns> toUploadInputs = extractUploadDataIns(dataIns); // list of dataIns that specify where the output should be stored
                 Double uploadTime = 0D;
-                // TODO loop through storage regions, calculate in each iteration the upload time
-                // perform all of the steps below within the loop, so compare in each iteration if it is the min for the current fd
-                // at the end of the loop we have to compare the intermediate result of the fd + DTT with the fastest
 
+                Map<DataIns, DataTransfer> bestOptions = new HashMap<>();
                 for (DataIns dataIn : toUploadInputs) {
-                    Double upMin = Double.MAX_VALUE;
+                    double upMin = Double.MAX_VALUE;
                     // loop through storages
-                    for (int i = 0; i < 2; i++) {
-                        // get region
-                        // calculate upload time
-                        // check if upload time is < than output_min
-                        // if yes, update time and set element of toLookAtOutput with new value and write back to list
-                        dataIn.setValue("TODO-INSERT-URL-HERE");
+                    for (DataTransfer dataTransfer : uploadDataTransfers) {
+                        int fileAmount = extractFileAmount(dataIn);
+                        double fileSize = extractFileSize(dataIn);
+                        double upTime = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount, fileSize);
+
+                        if (upTime < upMin) {
+                            upMin = upTime;
+                            bestOptions.put(dataIn, dataTransfer);
+                        }
                     }
-                    // upload time += output_min
+                    uploadTime += upMin;
                 }
 
                 double RTT = fd.getAvgRTT() + downloadTime + uploadTime;
@@ -155,9 +168,17 @@ public class StoreLess implements SchedulingAlgorithm {
                     scheduledFunctionDeployment = fd;
                     minEst = currentEst;
                     minEft = currentEft;
+
+                    // set the value of the dataIns to the storage bucket url for the identified region
+                    bestOptions.forEach((dataIn, dataTransfer) ->
+                            dataIn.setValue(buildStorageBucketUrl(MetadataCache.get().getRegionsById()
+                                    .get(dataTransfer.getStorageRegionID().intValue())
+                            ))
+                    );
                     scheduledDataIns = dataIns;
                     DataFlowStore.updateValuesInStore(toSchedule.getAtomicFunction().getName(), toUploadInputs,
                             toSchedule.getAtomicFunction().getDataOuts(), toUploadInputs.size() == 1);
+
                 }
             }
 
@@ -186,6 +207,51 @@ public class StoreLess implements SchedulingAlgorithm {
             decisionLogger.getLogger().info("Calculated makespan: " + maxEft);
         }
 
+    }
+
+    /**
+     * Checks if the given function deployment is in a region for which an entry in the data transfer entries exists.
+     *
+     * @param fd to check the region for
+     *
+     * @return true if it exists, false otherwise
+     */
+    private boolean dataTransferEntryExistsFor(FunctionDeployment fd) {
+        return MetadataCache.get().getDataTransfers().stream()
+                .anyMatch(entry -> Objects.equals(entry.getFunctionRegionID(), fd.getRegionId()));
+    }
+
+    /**
+     * Builds the storage bucket url based on the given region in the format 's3|gs://[prefix][region-name][suffix]/'
+     *
+     * @param region to build the url from
+     *
+     * @return a string containing the built storage bucket url
+     */
+    private String buildStorageBucketUrl(Region region) {
+        String url = "";
+        if (region.getProvider() == Provider.AWS) {
+            url = "s3://";
+        } else if (region.getProvider() == Provider.Google) {
+            url = "gs://";
+        } else {
+            throw new SchedulingException("Currently only AWS and GCP are supported!");
+        }
+
+        String prefix = DataFlowStore.getBucketPrefix();
+        String suffix = DataFlowStore.getBucketSuffix();
+
+        if (prefix != null && !prefix.isEmpty()) {
+            url += prefix;
+        }
+        url += region.getRegion();
+        if (suffix != null && !suffix.isEmpty()) {
+            url += suffix;
+        }
+        // TODO organize with subfolders like /tmp/ and /output/?
+        url += "/";
+
+        return url;
     }
 
     /**
