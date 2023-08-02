@@ -5,7 +5,6 @@ import at.ac.uibk.scheduler.ScheduleRequestHandler;
 import at.ac.uibk.scheduler.SchedulerRequestInput;
 import at.ac.uibk.scheduler.storeless.DataFlowStore;
 import at.ac.uibk.util.ObjectMapperUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
@@ -13,7 +12,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -38,9 +36,16 @@ public class ScheduleInvoker {
     /**
      * Specify in and output files, will be AFCL and CFCL workflows
      */
-    private static final Path INPUT = Path.of("BWAfaast4_afcl.yaml");
+    private static final Path INPUT = Path.of("wf.yaml");
     private static final Path INPUT_JSON = Path.of("input.json");
-    private static final Path OUTPUT = Path.of("BWAfaast4_cfcl.yaml");
+    private static final Path OUTPUT = Path.of("wf-cfcl.yaml");
+
+    /**
+     * Specify the pre- and suffix of the buckets that should be used. The buckets will then look like:
+     * s3|gs://[prefix][region-name][suffix]/
+     */
+    private static final String BUCKET_PREFIX = "";
+    private static final String BUCKET_SUFFIX = "";
 
     public static void main(String[] args) throws Exception {
 
@@ -50,6 +55,7 @@ public class ScheduleInvoker {
             Workflow wf = OBJECT_MAPPER.readValue(is, Workflow.class);
 
             DataFlowStore.storeInputsAndOutputs(wf, INPUT_JSON);
+            DataFlowStore.setBucketPrefixAndSuffix(BUCKET_PREFIX, BUCKET_SUFFIX);
 
             final SchedulerRequestInput input = new SchedulerRequestInput();
 

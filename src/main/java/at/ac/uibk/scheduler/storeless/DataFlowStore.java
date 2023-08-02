@@ -33,6 +33,10 @@ public class DataFlowStore {
      */
     private static final Map<String, DataOuts> dataOuts = new HashMap<>();
 
+    private static String bucketPrefix;
+
+    private static String bucketSuffix;
+
     /**
      * Stores all data flow inputs and outputs of the workflow and the input json file in a map. The map is used to
      * access the storage destinations of (intermediate) data.
@@ -49,6 +53,11 @@ public class DataFlowStore {
         storeInputJson(input, wf.getName());
     }
 
+    public static void setBucketPrefixAndSuffix(String prefix, String suffix) {
+        bucketPrefix = prefix;
+        bucketSuffix = suffix;
+    }
+
     /**
      * Get the concrete value of a {@link DataIns} object identified by the {@code source}.
      *
@@ -59,7 +68,7 @@ public class DataFlowStore {
      */
     public static String getDataInValue(String source, boolean isRecursive) {
         // if the source is a list of sources
-        if (source.contains(",")) {
+        if (source != null && source.contains(",")) {
             List<String> values = new ArrayList<>();
             if (source.startsWith("[") && source.endsWith("]")) {
                 source = source.substring(1, source.length() - 1);
@@ -301,5 +310,13 @@ public class DataFlowStore {
 
     public static Map<String, DataOuts> getDataOuts() {
         return dataOuts;
+    }
+
+    public static String getBucketPrefix() {
+        return bucketPrefix;
+    }
+
+    public static String getBucketSuffix() {
+        return bucketSuffix;
     }
 }
