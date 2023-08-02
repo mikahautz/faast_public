@@ -1,10 +1,9 @@
 package at.ac.uibk.scheduler.api;
 
 import at.ac.uibk.metadata.api.daos.se.provider.MetadataProvider;
-import at.ac.uibk.metadata.api.model.DetailedProvider;
-import at.ac.uibk.metadata.api.model.FunctionImplementation;
-import at.ac.uibk.metadata.api.model.FunctionType;
-import at.ac.uibk.metadata.api.model.Region;
+import at.ac.uibk.metadata.api.model.*;
+import at.ac.uibk.metadata.api.model.enums.DataTransferType;
+import at.ac.uibk.metadata.api.model.enums.Provider;
 import at.ac.uibk.metadata.api.model.functions.FunctionDeployment;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -28,6 +27,9 @@ public class MetadataCache {
     private final List<FunctionDeployment> functionDeployments;
     private final List<Region> regions;
     private final List<DetailedProvider> detailedProviders;
+    private final List<DataTransfer> dataTransfers;
+    private final List<DataTransfer> dataTransfersDownload;
+    private final List<DataTransfer> dataTransfersUpload;
 
     private final Map<Long, FunctionImplementation> functionImplementationsById;
     private final Map<Long, FunctionType> functionTypesById;
@@ -39,8 +41,11 @@ public class MetadataCache {
     private final Map<FunctionDeployment, Long> maxConcurrencyByDeployment;
 
     private final Map<Integer, Region> regionsById;
+    private final Map<String, Region> regionsByName;
 
     private final Map<Integer, DetailedProvider> detailedProvidersById;
+
+    private final Map<Long, DataTransfer> dataTransfersById;
 
     private MetadataCache() {
         final Map<Long, Long> concurrencyByFdId = new HashMap<>();
@@ -52,23 +57,22 @@ public class MetadataCache {
             this.functionDeployments = metadata.functionDeploymentDao().getAll()
                     .stream().filter(fd -> fd.getAvgRTT() != null && fd.getKmsArn() != null).collect(Collectors.toList());
 
-
-            //concurrencyByFdId = metadata.functionDeploymentService().getMaxConcurrencyForAllById();
-
             this.regions = metadata.regionDao().getAll();
             this.detailedProviders = metadata.detailedProviderDao().getAll();
-
+            this.dataTransfers = metadata.dataTransferDao().getAll();
 
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
-
 
         this.detailedProvidersById = this.detailedProviders.stream()
                 .collect(Collectors.toMap(DetailedProvider::getId, f -> f));
 
         this.regionsById = this.regions.stream()
                 .collect(Collectors.toMap(Region::getId, f -> f));
+
+        this.regionsByName = this.regions.stream()
+                .collect(Collectors.toMap(Region::getRegion, f -> f));
 
         this.deploymentsById = this.functionDeployments.stream()
                 .collect(Collectors.toMap(FunctionDeployment::getId, f -> f));
@@ -78,6 +82,17 @@ public class MetadataCache {
 
         this.functionTypesById = this.functionTypes.stream()
                 .collect(Collectors.toMap(FunctionType::getId, f -> f));
+
+        this.dataTransfersById = this.dataTransfers.stream()
+                .collect(Collectors.toMap(DataTransfer::getId, f -> f));
+
+        this.dataTransfersDownload = this.dataTransfers.stream()
+                .filter(d -> d.getType() == DataTransferType.download)
+                .collect(Collectors.toList());
+
+        this.dataTransfersUpload = this.dataTransfers.stream()
+                .filter(d -> d.getType() == DataTransferType.upload)
+                .collect(Collectors.toList());
 
         this.deploymentsByFunctionType =
                 this.functionDeployments.stream()
@@ -114,6 +129,13 @@ public class MetadataCache {
                 .map(FunctionDeployment::getRegionId)
                 .map(Long::intValue)
                 .map(this.getRegionsById()::get);
+    }
+
+    public Optional<Integer> getRegionIdFor(final String provider, final String region) {
+        return this.getRegions().stream()
+                .filter(r -> r.getProvider() == Provider.valueOf(provider) && r.getRegion().equals(region))
+                .findFirst()
+                .map(Region::getId);
     }
 
     public List<FunctionType> getFunctionTypes() {
@@ -160,11 +182,31 @@ public class MetadataCache {
         return this.regionsById;
     }
 
+    public Map<String, Region> getRegionsByName() {
+        return regionsByName;
+    }
+
     public Map<Integer, DetailedProvider> getDetailedProvidersById() {
         return this.detailedProvidersById;
     }
 
     public List<DetailedProvider> getDetailedProviders() {
         return this.detailedProviders;
+    }
+
+    public List<DataTransfer> getDataTransfers() {
+        return dataTransfers;
+    }
+
+    public List<DataTransfer> getDataTransfersDownload() {
+        return dataTransfersDownload;
+    }
+
+    public List<DataTransfer> getDataTransfersUpload() {
+        return dataTransfersUpload;
+    }
+
+    public Map<Long, DataTransfer> getDataTransfersById() {
+        return dataTransfersById;
     }
 }

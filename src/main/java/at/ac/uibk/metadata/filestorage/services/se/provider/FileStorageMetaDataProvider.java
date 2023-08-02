@@ -1,9 +1,6 @@
 package at.ac.uibk.metadata.filestorage.services.se.provider;
 
-import at.ac.uibk.metadata.api.daos.DetailedProviderDao;
-import at.ac.uibk.metadata.api.daos.FunctionImplementationDao;
-import at.ac.uibk.metadata.api.daos.FunctionTypeDao;
-import at.ac.uibk.metadata.api.daos.RegionDao;
+import at.ac.uibk.metadata.api.daos.*;
 import at.ac.uibk.metadata.api.daos.se.provider.MetadataProvider;
 import at.ac.uibk.metadata.api.daos.servicetypes.functions.FunctionDeploymentDao;
 import at.ac.uibk.metadata.filestorage.services.*;
@@ -23,6 +20,8 @@ public class FileStorageMetaDataProvider extends MetadataProvider {
 
     private RegionDao regionDao;
 
+    private DataTransferDao dataTransferDao;
+
     @Override
     public synchronized DetailedProviderDao detailedProviderDao() {
         if (this.detailedProviderDao == null) {
@@ -33,6 +32,18 @@ public class FileStorageMetaDataProvider extends MetadataProvider {
             }
         }
         return this.detailedProviderDao;
+    }
+
+    @Override
+    public DataTransferDao dataTransferDao() {
+        if (this.dataTransferDao == null) {
+            try {
+                this.dataTransferDao = new JsonDataTransferTypeDao(Path.of("metadata/datatransfer.json"));
+            } catch (final Exception e) {
+                throw new IllegalStateException("an error occured while loading datatransfers");
+            }
+        }
+        return this.dataTransferDao;
     }
 
     @Override

@@ -1,9 +1,6 @@
 package at.ac.uibk.metadata.api.daos.se.provider;
 
-import at.ac.uibk.metadata.api.daos.DetailedProviderDao;
-import at.ac.uibk.metadata.api.daos.FunctionImplementationDao;
-import at.ac.uibk.metadata.api.daos.FunctionTypeDao;
-import at.ac.uibk.metadata.api.daos.RegionDao;
+import at.ac.uibk.metadata.api.daos.*;
 import at.ac.uibk.metadata.api.daos.servicetypes.functions.FunctionDeploymentDao;
 
 import java.util.ServiceLoader;
@@ -31,4 +28,6 @@ public abstract class MetadataProvider implements AutoCloseable {
     public abstract FunctionImplementationDao functionImplementationDao();
 
     public abstract DetailedProviderDao detailedProviderDao();
+
+    public abstract DataTransferDao dataTransferDao();
 }
