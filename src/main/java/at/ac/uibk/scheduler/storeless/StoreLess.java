@@ -117,9 +117,7 @@ public class StoreLess implements SchedulingAlgorithm {
                         url = DataFlowStore.getDataInValue(dataIn.getSource(), false);
                     }
 
-                    // TODO apply model here
-                    double dlTime = 0;
-                    downloadTime += dlTime;
+                    downloadTime += DataTransferTimeModel.calculateDownloadTime(fd.getRegionId(), url, fileAmount, fileSize);
                 }
 
                 List<DataIns> toUploadInputs = extractUploadDataIns(dataIns); // list of dataIns that specify where the output should be stored
