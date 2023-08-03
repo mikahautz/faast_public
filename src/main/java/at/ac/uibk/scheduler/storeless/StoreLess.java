@@ -120,29 +120,32 @@ public class StoreLess implements SchedulingAlgorithm {
 
                 Double downloadTime = 0D;
                 for (DataIns dataIn : toDownloadInputs) {
-                    Integer fileAmount = null;
-                    Double fileSize = null;
-
-                    String url = null;
+                    List<String> urls = null;
+                    List<Integer> fileAmounts = null;
+                    List<Double> fileSizes = null;
 
                     if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
-                        url = dataIn.getValue();
+                        urls = List.of(dataIn.getValue());
                     } else {
-                        Triple<String, Integer, Double> result = DataFlowStore.getDataInValue(dataIn.getSource(), false);
-                        url = result.getFirst();
-                        fileAmount = result.getSecond();
-                        fileSize = result.getThird();
+                        Triple<List<String>, List<Integer>, List<Double>> result = DataFlowStore.getDataInValue(dataIn.getSource(), false);
+                        urls = result.getFirst();
+                        fileAmounts = result.getSecond();
+                        fileSizes = result.getThird();
                     }
 
-                    if (fileAmount == null) {
-                        fileAmount = HeftUtil.extractFileAmount(dataIn, false);
+                    if (fileAmounts == null || fileAmounts.isEmpty() || urls.size() != fileAmounts.size()) {
+                        fileAmounts = HeftUtil.extractFileAmount(dataIn, false);
                     }
 
-                    if (fileSize == null) {
-                        fileSize = HeftUtil.extractFileSize(dataIn, false);
+                    if (fileSizes == null || fileSizes.isEmpty() || urls.size() != fileSizes.size()) {
+                        fileSizes = HeftUtil.extractFileSize(dataIn, false);
                     }
 
-                    downloadTime += DataTransferTimeModel.calculateDownloadTime(fd.getRegionId(), url, fileAmount, fileSize);
+                    if (urls.size() != fileAmounts.size() || urls.size() != fileSizes.size()) {
+                        throw new SchedulingException("Amount of storage urls does not match with the amount of specified fileamounts or filesizes!");
+                    }
+
+                    downloadTime += DataTransferTimeModel.calculateDownloadTime(fd.getRegionId(), urls, fileAmounts, fileSizes);
                 }
 
                 Double uploadTime = 0D;
@@ -152,9 +155,9 @@ public class StoreLess implements SchedulingAlgorithm {
                     double upMin = Double.MAX_VALUE;
                     // loop through storages
                     for (DataTransfer dataTransfer : uploadDataTransfers) {
-                        int fileAmount = HeftUtil.extractFileAmount(dataIn, false);
-                        double fileSize = HeftUtil.extractFileSize(dataIn, false);
-                        double upTime = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount, fileSize);
+                        List<Integer> fileAmount = HeftUtil.extractFileAmount(dataIn, false);
+                        List<Double> fileSize = HeftUtil.extractFileSize(dataIn, false);
+                        double upTime = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount.get(0), fileSize.get(0));
 
                         if (upTime < upMin) {
                             upMin = upTime;

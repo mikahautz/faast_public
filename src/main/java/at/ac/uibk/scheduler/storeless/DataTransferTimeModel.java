@@ -14,17 +14,22 @@ public class DataTransferTimeModel {
      * Calculates the download time using the given parameters.
      *
      * @param functionRegionId the id of the function region
-     * @param bucketUrl        the url of the storage bucket to download the data from
-     * @param fileAmount       the amount of files to be downloaded
-     * @param fileSize         the total size of all files to be downloaded
+     * @param bucketUrls       the urls of the storage bucket to download the data from
+     * @param fileAmounts      the amount of files to be downloaded
+     * @param fileSizes        the total size of all files to be downloaded
      *
      * @return the calculated download time
      */
-    public static double calculateDownloadTime(long functionRegionId, String bucketUrl, int fileAmount, double fileSize) {
-        long storageRegionId = getRegionId(bucketUrl);
-        DataTransfer dataTransfer = getDataTransferEntry(MetadataCache.get().getDataTransfersDownload(), functionRegionId, storageRegionId);
-
-        return fileAmount * dataTransfer.getLatency() + ((fileSize / dataTransfer.getBandwidth()) * 1000);
+    public static double calculateDownloadTime(long functionRegionId, List<String> bucketUrls, List<Integer> fileAmounts, List<Double> fileSizes) {
+        double dlTime = 0;
+        int idx = 0;
+        for (String url : bucketUrls) {
+            long storageRegionId = getRegionId(url);
+            DataTransfer dataTransfer = getDataTransferEntry(MetadataCache.get().getDataTransfersDownload(), functionRegionId, storageRegionId);
+            dlTime += fileAmounts.get(idx) * dataTransfer.getLatency() + ((fileSizes.get(idx) / dataTransfer.getBandwidth()) * 1000);
+            idx++;
+        }
+        return dlTime;
     }
 
     /**

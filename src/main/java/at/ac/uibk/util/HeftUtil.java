@@ -16,9 +16,8 @@ import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class HeftUtil {
 
@@ -117,12 +116,19 @@ public class HeftUtil {
      *
      * @return the extracted number
      */
-    public static Integer extractFileAmount(DataIns dataIn, boolean optional) {
+    public static List<Integer> extractFileAmount(DataIns dataIn, boolean optional) {
         if (dataIn.getProperties() != null) {
             for (PropertyConstraint property : dataIn.getProperties()) {
                 if (property.getName().equalsIgnoreCase("fileamount")) {
+                    String value = property.getValue();
                     try {
-                        return Integer.parseInt(property.getValue());
+                        if (value.contains(",")) {
+                            return Arrays.stream(value.split(","))
+                                    .map(Integer::parseInt)
+                                    .collect(Collectors.toList());
+                        } else {
+                            return List.of(Integer.parseInt(value));
+                        }
                     } catch (NumberFormatException e) {
                         throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' has to be an Integer!");
                     }
@@ -143,12 +149,19 @@ public class HeftUtil {
      *
      * @return the extracted number
      */
-    public static Integer extractFileAmount(DataOuts dataOut) {
+    public static List<Integer> extractFileAmount(DataOuts dataOut) {
         if (dataOut.getProperties() != null) {
             for (PropertyConstraint property : dataOut.getProperties()) {
                 if (property.getName().equalsIgnoreCase("fileamount")) {
+                    String value = property.getValue();
                     try {
-                        return Integer.parseInt(property.getValue());
+                        if (value.contains(",")) {
+                            return Arrays.stream(value.split(","))
+                                    .map(Integer::parseInt)
+                                    .collect(Collectors.toList());
+                        } else {
+                            return List.of(Integer.parseInt(value));
+                        }
                     } catch (NumberFormatException e) {
                         throw new SchedulingException(dataOut.getName() + ": Property 'fileamount' has to be an Integer!");
                     }
@@ -166,14 +179,19 @@ public class HeftUtil {
      *
      * @return the extracted number
      */
-    public static Double extractFileSize(DataIns dataIn, boolean optional) {
+    public static List<Double> extractFileSize(DataIns dataIn, boolean optional) {
         if (dataIn.getProperties() != null) {
             for (PropertyConstraint property : dataIn.getProperties()) {
                 if (property.getName().equalsIgnoreCase("filesize")) {
                     String value = property.getValue();
-                    value = value.replace(",", ".");
                     try {
-                        return Double.parseDouble(value);
+                        if (value.contains(",")) {
+                            return Arrays.stream(value.split(","))
+                                    .map(Double::parseDouble)
+                                    .collect(Collectors.toList());
+                        } else {
+                            return List.of(Double.parseDouble(value));
+                        }
                     } catch (NumberFormatException e) {
                         throw new SchedulingException("Property 'filesize' has to be a Double!");
                     }
@@ -194,14 +212,19 @@ public class HeftUtil {
      *
      * @return the extracted number
      */
-    public static Double extractFileSize(DataOuts dataOut) {
+    public static List<Double> extractFileSize(DataOuts dataOut) {
         if (dataOut.getProperties() != null) {
             for (PropertyConstraint property : dataOut.getProperties()) {
                 if (property.getName().equalsIgnoreCase("filesize")) {
                     String value = property.getValue();
-                    value = value.replace(",", ".");
                     try {
-                        return Double.parseDouble(value);
+                        if (value.contains(",")) {
+                            return Arrays.stream(value.split(","))
+                                    .map(Double::parseDouble)
+                                    .collect(Collectors.toList());
+                        } else {
+                            return List.of(Double.parseDouble(value));
+                        }
                     } catch (NumberFormatException e) {
                         throw new SchedulingException("Property 'filesize' has to be a Double!");
                     }

@@ -68,48 +68,45 @@ public class DataFlowStore {
      *
      * @return the value of the {@link DataIns} object as a string
      */
-    public static Triple<String, Integer, Double> getDataInValue(String source, boolean isRecursive) {
+    public static Triple<List<String>, List<Integer>, List<Double>> getDataInValue(String source, boolean isRecursive) {
         // if the source is a list of sources
         if (source != null && source.contains(",")) {
-            List<Triple<String, Integer, Double>> results = new ArrayList<>();
+            List<Triple<List<String>, List<Integer>, List<Double>>> results = new ArrayList<>();
             if (source.startsWith("[") && source.endsWith("]")) {
                 source = source.substring(1, source.length() - 1);
             }
             String[] sources = source.split(",");
             for (String s : sources) {
-                results.add(getDataInValue(source, true));
+                results.add(getDataInValue(s, true));
             }
             // if any value is null, meaning no value could be found for that source
             if (results.stream().anyMatch(Objects::isNull)) {
                 throw new SchedulingException("Could not find values for all sources: '" + source + "'");
             } else {
                 List<String> values = new ArrayList<>();
-                Integer fileAmounts = 0;
-                Double fileSizes = 0D;
-                for (Triple<String, Integer, Double> entry : results) {
-                    values.add(entry.getFirst());
-
-                    if (entry.getSecond() == null) fileAmounts = null;
-                    if (fileAmounts != null) fileAmounts += entry.getSecond();
-
-                    if (entry.getThird() == null) fileSizes = null;
-                    if (fileSizes != null) fileSizes += entry.getThird();
+                List<Integer> fileAmounts = new ArrayList<>();
+                List<Double> fileSizes = new ArrayList<>();
+                for (Triple<List<String>, List<Integer>, List<Double>> entry : results) {
+                    values.addAll(entry.getFirst());
+                    if (entry.getSecond() != null && entry.getSecond().stream().noneMatch(Objects::isNull)) {
+                        fileAmounts.addAll(entry.getSecond());
+                    }
+                    if (entry.getThird() != null && entry.getThird().stream().noneMatch(Objects::isNull)) {
+                        fileSizes.addAll(entry.getThird());
+                    }
                 }
 
-                String result = values.toString();
-                result = result.substring(1, result.length() - 1);
-
-                return new Triple<>(result, fileAmounts, fileSizes);
+                return new Triple<>(values, fileAmounts, fileSizes);
             }
         }
 
         if (dataOuts.containsKey(source)) {
             DataOuts dataOut = dataOuts.get(source);
             if (dataOut.getValue() != null && !dataOut.getValue().isEmpty()) {
-                return new Triple<>(dataOut.getValue(), HeftUtil.extractFileAmount(dataOut), HeftUtil.extractFileSize(dataOut));
+                return new Triple<>(List.of(dataOut.getValue()), HeftUtil.extractFileAmount(dataOut), HeftUtil.extractFileSize(dataOut));
             } else {
                 // go through all possible dataOuts, if we get a value then use it, otherwise continue with the dataIns
-                Triple<String, Integer, Double> result = getDataInValue(dataOut.getSource(), true);
+                Triple<List<String>, List<Integer>, List<Double>> result = getDataInValue(dataOut.getSource(), true);
                 if (result != null) {
                     return result;
                 }
@@ -119,9 +116,9 @@ public class DataFlowStore {
         if (dataIns.containsKey(source)) {
             DataIns dataIn = dataIns.get(source);
             if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
-                return new Triple<>(dataIn.getValue(), HeftUtil.extractFileAmount(dataIn, true), HeftUtil.extractFileSize(dataIn, true));
+                return new Triple<>(List.of(dataIn.getValue()), HeftUtil.extractFileAmount(dataIn, true), HeftUtil.extractFileSize(dataIn, true));
             } else {
-                Triple<String, Integer, Double> result = getDataInValue(dataIn.getSource(), true);
+                Triple<List<String>, List<Integer>, List<Double>> result = getDataInValue(dataIn.getSource(), true);
                 if (result != null) {
                     return result;
                 }
