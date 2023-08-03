@@ -114,28 +114,13 @@ public class HeftUtil {
      * @param dataIn   to extract the property
      * @param optional specifies if the fileamount is optional, if it is not an error will be thrown if it is not found
      *
-     * @return the extracted number
+     * @return the list of extracted fileamount(s)
      */
     public static List<Integer> extractFileAmount(DataIns dataIn, boolean optional) {
-        if (dataIn.getProperties() != null) {
-            for (PropertyConstraint property : dataIn.getProperties()) {
-                if (property.getName().equalsIgnoreCase("fileamount")) {
-                    String value = property.getValue();
-                    try {
-                        if (value.contains(",")) {
-                            return Arrays.stream(value.split(","))
-                                    .map(Integer::parseInt)
-                                    .collect(Collectors.toList());
-                        } else {
-                            return List.of(Integer.parseInt(value));
-                        }
-                    } catch (NumberFormatException e) {
-                        throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' has to be an Integer!");
-                    }
-                }
-            }
-        }
-        if (optional) {
+        List<Integer> result = extractFileAmountHelper(dataIn.getProperties(), dataIn.getName());
+        if (result != null && !result.isEmpty()) {
+            return result;
+        } else if (optional) {
             return null;
         } else {
             throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' is missing!");
@@ -147,11 +132,23 @@ public class HeftUtil {
      *
      * @param dataOut to extract the property
      *
-     * @return the extracted number
+     * @return the list of extracted fileamount(s)
      */
     public static List<Integer> extractFileAmount(DataOuts dataOut) {
-        if (dataOut.getProperties() != null) {
-            for (PropertyConstraint property : dataOut.getProperties()) {
+        return extractFileAmountHelper(dataOut.getProperties(), dataOut.getName());
+    }
+
+    /**
+     * Helper method to extract the fileamount of the given list of properties.
+     *
+     * @param properties to check for the fileamount property
+     * @param name       the name of the dataIn or dataOut
+     *
+     * @return the list of extracted fileamount(s)
+     */
+    private static List<Integer> extractFileAmountHelper(List<PropertyConstraint> properties, String name) {
+        if (properties != null) {
+            for (PropertyConstraint property : properties) {
                 if (property.getName().equalsIgnoreCase("fileamount")) {
                     String value = property.getValue();
                     try {
@@ -163,7 +160,7 @@ public class HeftUtil {
                             return List.of(Integer.parseInt(value));
                         }
                     } catch (NumberFormatException e) {
-                        throw new SchedulingException(dataOut.getName() + ": Property 'fileamount' has to be an Integer!");
+                        throw new SchedulingException(name + ": Property 'fileamount' has to be an Integer or a list of Integers!");
                     }
                 }
             }
@@ -177,7 +174,7 @@ public class HeftUtil {
      * @param dataIn   to extract the property
      * @param optional specifies if the filesize is optional, if it is not an error will be thrown if it is not found
      *
-     * @return the extracted number
+     * @return the list of extracted filesize(s)
      */
     public static List<Double> extractFileSize(DataIns dataIn, boolean optional) {
         if (dataIn.getProperties() != null) {
@@ -198,7 +195,11 @@ public class HeftUtil {
                 }
             }
         }
-        if (optional) {
+
+        List<Double> result = extractFileSizeHelper(dataIn.getProperties(), dataIn.getName());
+        if (result != null && !result.isEmpty()) {
+            return result;
+        } else if (optional) {
             return null;
         } else {
             throw new SchedulingException(dataIn.getName() + ": Property 'filesize' is missing!");
@@ -210,11 +211,23 @@ public class HeftUtil {
      *
      * @param dataOut to extract the property
      *
-     * @return the extracted number
+     * @return the list of extracted filesize(s)
      */
     public static List<Double> extractFileSize(DataOuts dataOut) {
-        if (dataOut.getProperties() != null) {
-            for (PropertyConstraint property : dataOut.getProperties()) {
+        return extractFileSizeHelper(dataOut.getProperties(), dataOut.getName());
+    }
+
+    /**
+     * Helper method to extract the filesize of the given list of properties.
+     *
+     * @param properties to check for the filesize property
+     * @param name       the name of the dataIn or dataOut
+     *
+     * @return the list of extracted filesize(s)
+     */
+    private static List<Double> extractFileSizeHelper(List<PropertyConstraint> properties, String name) {
+        if (properties != null) {
+            for (PropertyConstraint property : properties) {
                 if (property.getName().equalsIgnoreCase("filesize")) {
                     String value = property.getValue();
                     try {
@@ -226,7 +239,7 @@ public class HeftUtil {
                             return List.of(Double.parseDouble(value));
                         }
                     } catch (NumberFormatException e) {
-                        throw new SchedulingException("Property 'filesize' has to be a Double!");
+                        throw new SchedulingException(name + ": Property 'filesize' has to be a Double or a list of Doubles!");
                     }
                 }
             }

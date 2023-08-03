@@ -66,7 +66,7 @@ public class DataFlowStore {
      * @param source      to identify the {@link DataIns} object
      * @param isRecursive determines if the method is called recursively
      *
-     * @return the value of the {@link DataIns} object as a string
+     * @return a {@link Triple} containing the value(s) of the {@link DataIns}, the amount of files and file sizes
      */
     public static Triple<List<String>, List<Integer>, List<Double>> getDataInValue(String source, boolean isRecursive) {
         // if the source is a list of sources
