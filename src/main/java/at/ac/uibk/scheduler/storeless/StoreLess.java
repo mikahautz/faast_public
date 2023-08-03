@@ -18,6 +18,7 @@ import at.ac.uibk.scheduler.faast.PlannedExecution;
 import at.ac.uibk.scheduler.faast.RegionConcurrencyChecker;
 import at.ac.uibk.util.DecisionLogger;
 import at.ac.uibk.util.HeftUtil;
+import org.jgrapht.alg.util.Triple;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 
 import java.util.*;
@@ -119,15 +120,26 @@ public class StoreLess implements SchedulingAlgorithm {
 
                 Double downloadTime = 0D;
                 for (DataIns dataIn : toDownloadInputs) {
-                    int fileAmount = extractFileAmount(dataIn);
-                    double fileSize = extractFileSize(dataIn);
+                    Integer fileAmount = null;
+                    Double fileSize = null;
 
                     String url = null;
 
                     if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
                         url = dataIn.getValue();
                     } else {
-                        url = DataFlowStore.getDataInValue(dataIn.getSource(), false);
+                        Triple<String, Integer, Double> result = DataFlowStore.getDataInValue(dataIn.getSource(), false);
+                        url = result.getFirst();
+                        fileAmount = result.getSecond();
+                        fileSize = result.getThird();
+                    }
+
+                    if (fileAmount == null) {
+                        fileAmount = HeftUtil.extractFileAmount(dataIn, false);
+                    }
+
+                    if (fileSize == null) {
+                        fileSize = HeftUtil.extractFileSize(dataIn, false);
                     }
 
                     downloadTime += DataTransferTimeModel.calculateDownloadTime(fd.getRegionId(), url, fileAmount, fileSize);
@@ -140,8 +152,8 @@ public class StoreLess implements SchedulingAlgorithm {
                     double upMin = Double.MAX_VALUE;
                     // loop through storages
                     for (DataTransfer dataTransfer : uploadDataTransfers) {
-                        int fileAmount = extractFileAmount(dataIn);
-                        double fileSize = extractFileSize(dataIn);
+                        int fileAmount = HeftUtil.extractFileAmount(dataIn, false);
+                        double fileSize = HeftUtil.extractFileSize(dataIn, false);
                         double upTime = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount, fileSize);
 
                         if (upTime < upMin) {
@@ -286,48 +298,6 @@ public class StoreLess implements SchedulingAlgorithm {
             }
         }
         return upDataIns;
-    }
-
-    /**
-     * Extracts the value for the {@code fileamount} property of a {@link DataIns}.
-     *
-     * @param dataIn to extract the property
-     *
-     * @return the extracted number
-     */
-    private int extractFileAmount(DataIns dataIn) {
-        for (PropertyConstraint property : dataIn.getProperties()) {
-            if (property.getName().equalsIgnoreCase("fileamount")) {
-                try {
-                    return Integer.parseInt(property.getValue());
-                } catch (NumberFormatException e) {
-                    throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' has to be an Integer!");
-                }
-            }
-        }
-        throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' is missing!");
-    }
-
-    /**
-     * Extracts the value for the {@code filesize} property of a {@link DataIns}.
-     *
-     * @param dataIn to extract the property
-     *
-     * @return the extracted number
-     */
-    private double extractFileSize(DataIns dataIn) {
-        for (PropertyConstraint property : dataIn.getProperties()) {
-            if (property.getName().equalsIgnoreCase("filesize")) {
-                String value = property.getValue();
-                value = value.replace(",", ".");
-                try {
-                    return Double.parseDouble(value);
-                } catch (NumberFormatException e) {
-                    throw new SchedulingException("Property 'filesize' has to be a Double!");
-                }
-            }
-        }
-        throw new SchedulingException(dataIn.getName() + ": Property 'filesize' is missing!");
     }
 
     /**

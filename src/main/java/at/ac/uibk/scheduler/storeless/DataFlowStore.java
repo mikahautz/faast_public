@@ -8,8 +8,10 @@ import at.ac.uibk.core.functions.objects.DataOuts;
 import at.ac.uibk.core.functions.objects.DataOutsAtomic;
 import at.ac.uibk.core.functions.objects.PropertyConstraint;
 import at.ac.uibk.scheduler.api.SchedulingException;
+import at.ac.uibk.util.HeftUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jgrapht.alg.util.Triple;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -66,33 +68,48 @@ public class DataFlowStore {
      *
      * @return the value of the {@link DataIns} object as a string
      */
-    public static String getDataInValue(String source, boolean isRecursive) {
+    public static Triple<String, Integer, Double> getDataInValue(String source, boolean isRecursive) {
         // if the source is a list of sources
         if (source != null && source.contains(",")) {
-            List<String> values = new ArrayList<>();
+            List<Triple<String, Integer, Double>> results = new ArrayList<>();
             if (source.startsWith("[") && source.endsWith("]")) {
                 source = source.substring(1, source.length() - 1);
             }
             String[] sources = source.split(",");
             for (String s : sources) {
-                values.add(getDataInValue(source, true));
+                results.add(getDataInValue(source, true));
             }
             // if any value is null, meaning no value could be found for that source
-            if (values.stream().anyMatch(Objects::isNull)) {
+            if (results.stream().anyMatch(Objects::isNull)) {
                 throw new SchedulingException("Could not find values for all sources: '" + source + "'");
             } else {
+                List<String> values = new ArrayList<>();
+                Integer fileAmounts = 0;
+                Double fileSizes = 0D;
+                for (Triple<String, Integer, Double> entry : results) {
+                    values.add(entry.getFirst());
+
+                    if (entry.getSecond() == null) fileAmounts = null;
+                    if (fileAmounts != null) fileAmounts += entry.getSecond();
+
+                    if (entry.getThird() == null) fileSizes = null;
+                    if (fileSizes != null) fileSizes += entry.getThird();
+                }
+
                 String result = values.toString();
-                return result.substring(1, result.length() - 1);
+                result = result.substring(1, result.length() - 1);
+
+                return new Triple<>(result, fileAmounts, fileSizes);
             }
         }
 
         if (dataOuts.containsKey(source)) {
             DataOuts dataOut = dataOuts.get(source);
             if (dataOut.getValue() != null && !dataOut.getValue().isEmpty()) {
-                return dataOut.getValue();
+                return new Triple<>(dataOut.getValue(), HeftUtil.extractFileAmount(dataOut), HeftUtil.extractFileSize(dataOut));
             } else {
                 // go through all possible dataOuts, if we get a value then use it, otherwise continue with the dataIns
-                String result = getDataInValue(dataOut.getSource(), true);
+                Triple<String, Integer, Double> result = getDataInValue(dataOut.getSource(), true);
                 if (result != null) {
                     return result;
                 }
@@ -102,9 +119,9 @@ public class DataFlowStore {
         if (dataIns.containsKey(source)) {
             DataIns dataIn = dataIns.get(source);
             if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
-                return dataIn.getValue();
+                return new Triple<>(dataIn.getValue(), HeftUtil.extractFileAmount(dataIn, true), HeftUtil.extractFileSize(dataIn, true));
             } else {
-                String result = getDataInValue(dataIn.getSource(), true);
+                Triple<String, Integer, Double> result = getDataInValue(dataIn.getSource(), true);
                 if (result != null) {
                     return result;
                 }
@@ -137,13 +154,17 @@ public class DataFlowStore {
 
             if (universalDestination) {
                 for (DataOutsAtomic dataOut : dataOuts) {
-                    DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName()).setValue(value);
+                    DataOuts tmp = DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName());
+                    tmp.setValue(value);
+                    if (tmp.getProperties() == null) tmp.setProperties(new ArrayList<>());
+                    if (dataIn.getProperties() != null) tmp.getProperties().addAll(dataIn.getProperties());
                 }
-                // we have multiple dataIns that specify an output destination, therefore we have to check which dataOut uses which output destination
             } else {
+                // we have multiple dataIns that specify an output destination, therefore we have to check which dataOut uses which output destination
                 final Supplier<SchedulingException> propertyIsMissing =
                         () -> new SchedulingException(dataIn.getName() + ": Multiple different outputs are defined, but property 'uploadId' is missing!");
 
+                // TODO check if names are the same of dataIn and dataOut
                 Integer uploadId = null;
                 List<PropertyConstraint> properties = dataIn.getProperties();
                 if (properties != null && !properties.isEmpty()) {
@@ -165,7 +186,10 @@ public class DataFlowStore {
 
                 for (DataOutsAtomic dataOut : dataOuts) {
                     if (hasUploadId(dataOut, uploadId)) {
-                        DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName()).setValue(value);
+                        DataOuts tmp = DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName());
+                        tmp.setValue(value);
+                        if (tmp.getProperties() == null) tmp.setProperties(new ArrayList<>());
+                        if (dataIn.getProperties() != null) tmp.getProperties().addAll(dataIn.getProperties());
                     }
                 }
             }

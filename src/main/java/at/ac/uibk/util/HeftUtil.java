@@ -1,5 +1,8 @@
 package at.ac.uibk.util;
 
+import at.ac.uibk.core.functions.objects.DataIns;
+import at.ac.uibk.core.functions.objects.DataOuts;
+import at.ac.uibk.core.functions.objects.PropertyConstraint;
 import at.ac.uibk.metadata.api.model.Region;
 import at.ac.uibk.metadata.api.model.functions.FunctionDeployment;
 import at.ac.uibk.scheduler.api.*;
@@ -104,6 +107,108 @@ public class HeftUtil {
         } else {
             return res.getAsDouble();
         }
+    }
+
+    /**
+     * Extracts the value for the {@code fileamount} property of a {@link DataIns}.
+     *
+     * @param dataIn   to extract the property
+     * @param optional specifies if the fileamount is optional, if it is not an error will be thrown if it is not found
+     *
+     * @return the extracted number
+     */
+    public static Integer extractFileAmount(DataIns dataIn, boolean optional) {
+        if (dataIn.getProperties() != null) {
+            for (PropertyConstraint property : dataIn.getProperties()) {
+                if (property.getName().equalsIgnoreCase("fileamount")) {
+                    try {
+                        return Integer.parseInt(property.getValue());
+                    } catch (NumberFormatException e) {
+                        throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' has to be an Integer!");
+                    }
+                }
+            }
+        }
+        if (optional) {
+            return null;
+        } else {
+            throw new SchedulingException(dataIn.getName() + ": Property 'fileamount' is missing!");
+        }
+    }
+
+    /**
+     * Extracts the value for the {@code fileamount} property of a {@link DataOuts}.
+     *
+     * @param dataOut to extract the property
+     *
+     * @return the extracted number
+     */
+    public static Integer extractFileAmount(DataOuts dataOut) {
+        if (dataOut.getProperties() != null) {
+            for (PropertyConstraint property : dataOut.getProperties()) {
+                if (property.getName().equalsIgnoreCase("fileamount")) {
+                    try {
+                        return Integer.parseInt(property.getValue());
+                    } catch (NumberFormatException e) {
+                        throw new SchedulingException(dataOut.getName() + ": Property 'fileamount' has to be an Integer!");
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Extracts the value for the {@code filesize} property of a {@link DataIns}.
+     *
+     * @param dataIn   to extract the property
+     * @param optional specifies if the filesize is optional, if it is not an error will be thrown if it is not found
+     *
+     * @return the extracted number
+     */
+    public static Double extractFileSize(DataIns dataIn, boolean optional) {
+        if (dataIn.getProperties() != null) {
+            for (PropertyConstraint property : dataIn.getProperties()) {
+                if (property.getName().equalsIgnoreCase("filesize")) {
+                    String value = property.getValue();
+                    value = value.replace(",", ".");
+                    try {
+                        return Double.parseDouble(value);
+                    } catch (NumberFormatException e) {
+                        throw new SchedulingException("Property 'filesize' has to be a Double!");
+                    }
+                }
+            }
+        }
+        if (optional) {
+            return null;
+        } else {
+            throw new SchedulingException(dataIn.getName() + ": Property 'filesize' is missing!");
+        }
+    }
+
+    /**
+     * Extracts the value for the {@code filesize} property of a {@link DataOuts}.
+     *
+     * @param dataOut to extract the property
+     *
+     * @return the extracted number
+     */
+    public static Double extractFileSize(DataOuts dataOut) {
+        if (dataOut.getProperties() != null) {
+            for (PropertyConstraint property : dataOut.getProperties()) {
+                if (property.getName().equalsIgnoreCase("filesize")) {
+                    String value = property.getValue();
+                    value = value.replace(",", ".");
+                    try {
+                        return Double.parseDouble(value);
+                    } catch (NumberFormatException e) {
+                        throw new SchedulingException("Property 'filesize' has to be a Double!");
+                    }
+                }
+            }
+        }
+        return null;
     }
 
 }
