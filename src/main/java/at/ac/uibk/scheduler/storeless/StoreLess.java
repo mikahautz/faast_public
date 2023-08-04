@@ -133,10 +133,10 @@ public class StoreLess implements SchedulingAlgorithm {
                         fileSizes = result.getThird();
                     }
 
+                    // if the fileamount and filesize were not used before, they need to be specified in the workflow
                     if (fileAmounts == null || fileAmounts.isEmpty() || urls.size() != fileAmounts.size()) {
                         fileAmounts = HeftUtil.extractFileAmount(dataIn, false);
                     }
-
                     if (fileSizes == null || fileSizes.isEmpty() || urls.size() != fileSizes.size()) {
                         fileSizes = HeftUtil.extractFileSize(dataIn, false);
                     }
@@ -153,17 +153,35 @@ public class StoreLess implements SchedulingAlgorithm {
                 Map<DataIns, DataTransfer> bestOptions = new HashMap<>();
                 for (DataIns dataIn : toUploadInputs) {
                     double upMin = Double.MAX_VALUE;
-                    // loop through storages
-                    for (DataTransfer dataTransfer : uploadDataTransfers) {
+
+                    // if an output bucket is specified to be used explicitly, use that one
+                    if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
+                        Long regionId = DataTransferTimeModel.getRegionId(dataIn.getValue());
+                        DataTransfer dataTransfer = uploadDataTransfers.stream()
+                                .filter(entry -> Objects.equals(entry.getStorageRegionID(), regionId))
+                                .findFirst()
+                                .orElseThrow(() -> new SchedulingException("No Data Transfer entry exists for the region of given bucket: " + dataIn.getValue()));
+
                         List<Integer> fileAmount = HeftUtil.extractFileAmount(dataIn, false);
                         List<Double> fileSize = HeftUtil.extractFileSize(dataIn, false);
-                        double upTime = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount.get(0), fileSize.get(0));
+                        upMin = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount.get(0), fileSize.get(0));
+                        bestOptions.put(dataIn, dataTransfer);
+                    } else {
+                        // loop through storages
+                        for (DataTransfer dataTransfer : uploadDataTransfers) {
+                            List<Integer> fileAmount = HeftUtil.extractFileAmount(dataIn, false);
+                            List<Double> fileSize = HeftUtil.extractFileSize(dataIn, false);
+                            // for the upload, only a single number for the fileamount and filesize may be given,
+                            // that's why we can simply take the first element of the list
+                            double upTime = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount.get(0), fileSize.get(0));
 
-                        if (upTime < upMin) {
-                            upMin = upTime;
-                            bestOptions.put(dataIn, dataTransfer);
+                            if (upTime < upMin) {
+                                upMin = upTime;
+                                bestOptions.put(dataIn, dataTransfer);
+                            }
                         }
                     }
+
                     uploadTime += upMin;
                 }
 
@@ -185,11 +203,13 @@ public class StoreLess implements SchedulingAlgorithm {
                     minEft = currentEft;
 
                     // set the value of the dataIns to the storage bucket url for the identified region
-                    bestOptions.forEach((dataIn, dataTransfer) ->
+                    bestOptions.forEach((dataIn, dataTransfer) -> {
+                        if (dataIn.getValue() == null || dataIn.getValue().isEmpty()) {
                             dataIn.setValue(buildStorageBucketUrl(MetadataCache.get().getRegionsById()
                                     .get(dataTransfer.getStorageRegionID().intValue())
-                            ))
-                    );
+                            ));
+                        }
+                    });
                     scheduledDataIns = dataIns;
                     DataFlowStore.updateValuesInStore(toSchedule.getAtomicFunction().getName(), toUploadInputs,
                             toSchedule.getAtomicFunction().getDataOuts(), toUploadInputs.size() == 1);

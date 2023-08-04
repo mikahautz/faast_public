@@ -61,7 +61,8 @@ public class DataFlowStore {
     }
 
     /**
-     * Get the concrete value of a {@link DataIns} object identified by the {@code source}.
+     * Get the concrete value of a {@link DataIns} object identified by the {@code source}. Additionally, it returns the
+     * fileamount and filesize in case it has been used before.
      *
      * @param source      to identify the {@link DataIns} object
      * @param isRecursive determines if the method is called recursively

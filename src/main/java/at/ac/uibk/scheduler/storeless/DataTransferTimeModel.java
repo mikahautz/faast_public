@@ -53,7 +53,7 @@ public class DataTransferTimeModel {
      *
      * @return the id of the identified region
      */
-    private static Long getRegionId(String bucketUrl) {
+    public static Long getRegionId(String bucketUrl) {
         String provider;
         if (bucketUrl.startsWith("s3://") || bucketUrl.startsWith("arn:aws:s3") || bucketUrl.contains(".s3.amazonaws.com")) {
             provider = "AWS";
