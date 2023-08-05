@@ -18,6 +18,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class HeftUtil {
 
@@ -81,12 +82,24 @@ public class HeftUtil {
             startNodeOfGraph.setAlgorithmInfo(new PlannedExecution(0D, 0D));
         }
 
-        final double latestEFT = graph.incomingEdgesOf(atomicFunctionNode)
+        double latestEFT = graph.incomingEdgesOf(atomicFunctionNode)
                 .stream()
                 .map(graph::getEdgeSource)
                 .flatMap(p -> p.<PlannedExecution>getFirstAlgorithmInfosTypedFromAllPredecessors(graph))
                 .mapToDouble(PlannedExecution::getEndTime)
                 .max().orElse(0D);
+
+        // if a function is the direct predecessor, we have to get the PlannedExecutions from this function directly
+        final double latestPrevFunctionEFT = graph.incomingEdgesOf(atomicFunctionNode)
+                .stream()
+                .map(graph::getEdgeSource)
+                .flatMap(edge -> Stream.of(edge.getAlgorithmInfo())
+                        .filter(info -> info instanceof PlannedExecution)
+                        .map(info -> (PlannedExecution) info))
+                .mapToDouble(PlannedExecution::getEndTime)
+                .max().orElse(0D);
+
+        latestEFT = Math.max(latestEFT, latestPrevFunctionEFT);
 
         final Optional<Region> region = MetadataCache.get().getRegionFor(functionDeployment);
 

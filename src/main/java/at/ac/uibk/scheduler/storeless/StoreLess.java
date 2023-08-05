@@ -32,6 +32,8 @@ public class StoreLess implements SchedulingAlgorithm {
 
     private static final boolean EXTENDED_LOGGING = false;
 
+    private static final boolean TIME_LOGGING = true;
+
     public StoreLess() {
         bRankMap = new HashMap<>();
         regionConcurrencyChecker = new RegionConcurrencyChecker();
@@ -87,6 +89,9 @@ public class StoreLess implements SchedulingAlgorithm {
 
             double minEst = Double.MAX_VALUE;
             double minEft = Double.MAX_VALUE;
+            double finalRTT = 0;
+            double finalDownloadTime = 0;
+            double finalUploadTime = 0;
 
             final Supplier<SchedulingException> noScheduleFoundException =
                     () -> new SchedulingException("cannot schedule function for name " + toSchedule.getAtomicFunction().getName());
@@ -94,6 +99,8 @@ public class StoreLess implements SchedulingAlgorithm {
             RegionResource schedulingDecision = null;
             FunctionDeployment scheduledFunctionDeployment = null;
             List<DataIns> scheduledDataIns = null;
+            Map<DataIns, DataTransfer> scheduledDataUpload = null;
+            List<DataIns> toUploadInputs = null;
 
             for (final FunctionDeployment fd : functionDeploymentsByFunctionType.get(functionType)) {
                 final Region region = MetadataCache.get().getRegionFor(fd).orElseThrow();
@@ -111,34 +118,27 @@ public class StoreLess implements SchedulingAlgorithm {
 
                 List<DataIns> dataIns = toSchedule.getAtomicFunction().getDataIns();
                 List<DataIns> toDownloadInputs = extractDownloadDataIns(dataIns);
-                List<DataIns> toUploadInputs = extractUploadDataIns(dataIns); // list of dataIns that specify where the output should be stored
+                toUploadInputs = extractUploadDataIns(dataIns);
 
                 // check if any data needs to be down- or uploaded, and if the function region exists in the data transfer entries
                 if ((!toDownloadInputs.isEmpty() || !toUploadInputs.isEmpty()) && !dataTransferEntryExistsFor(fd)) {
                     continue;
                 }
 
-                Double downloadTime = 0D;
+                double downloadTime = 0;
                 for (DataIns dataIn : toDownloadInputs) {
                     List<String> urls = null;
-                    List<Integer> fileAmounts = null;
-                    List<Double> fileSizes = null;
+                    List<Integer> fileAmounts = HeftUtil.extractFileAmount(dataIn, true);
+                    List<Double> fileSizes = fileSizes = HeftUtil.extractFileSize(dataIn, true);
 
                     if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
                         urls = List.of(dataIn.getValue());
                     } else {
                         Triple<List<String>, List<Integer>, List<Double>> result = DataFlowStore.getDataInValue(dataIn.getSource(), false);
                         urls = result.getFirst();
-                        fileAmounts = result.getSecond();
-                        fileSizes = result.getThird();
-                    }
-
-                    // if the fileamount and filesize were not used before, they need to be specified in the workflow
-                    if (fileAmounts == null || fileAmounts.isEmpty() || urls.size() != fileAmounts.size()) {
-                        fileAmounts = HeftUtil.extractFileAmount(dataIn, false);
-                    }
-                    if (fileSizes == null || fileSizes.isEmpty() || urls.size() != fileSizes.size()) {
-                        fileSizes = HeftUtil.extractFileSize(dataIn, false);
+                        // only set the stored values if they were not explicitly given in the yaml file
+                        if (fileAmounts == null) fileAmounts = result.getSecond();
+                        if (fileSizes == null) fileSizes = result.getThird();
                     }
 
                     if (urls.size() != fileAmounts.size() || urls.size() != fileSizes.size()) {
@@ -148,7 +148,7 @@ public class StoreLess implements SchedulingAlgorithm {
                     downloadTime += DataTransferTimeModel.calculateDownloadTime(fd.getRegionId(), urls, fileAmounts, fileSizes);
                 }
 
-                Double uploadTime = 0D;
+                double uploadTime = 0;
 
                 Map<DataIns, DataTransfer> bestOptions = new HashMap<>();
                 for (DataIns dataIn : toUploadInputs) {
@@ -191,7 +191,6 @@ public class StoreLess implements SchedulingAlgorithm {
                         fd, RTT, this.regionConcurrencyChecker);
                 final double currentEft = currentEst + RTT;
 
-
                 if (decisionLogger != null) {
                     decisionLogger.saveEntry(fd.getKmsArn(), currentEst, currentEft);
                 }
@@ -202,18 +201,12 @@ public class StoreLess implements SchedulingAlgorithm {
                     minEst = currentEst;
                     minEft = currentEft;
 
-                    // set the value of the dataIns to the storage bucket url for the identified region
-                    bestOptions.forEach((dataIn, dataTransfer) -> {
-                        if (dataIn.getValue() == null || dataIn.getValue().isEmpty()) {
-                            dataIn.setValue(buildStorageBucketUrl(MetadataCache.get().getRegionsById()
-                                    .get(dataTransfer.getStorageRegionID().intValue())
-                            ));
-                        }
-                    });
-                    scheduledDataIns = dataIns;
-                    DataFlowStore.updateValuesInStore(toSchedule.getAtomicFunction().getName(), toUploadInputs,
-                            toSchedule.getAtomicFunction().getDataOuts(), toUploadInputs.size() == 1);
+                    finalRTT = RTT;
+                    finalDownloadTime = downloadTime;
+                    finalUploadTime = uploadTime;
 
+                    scheduledDataUpload = bestOptions;
+                    scheduledDataIns = dataIns;
                 }
             }
 
@@ -225,6 +218,18 @@ public class StoreLess implements SchedulingAlgorithm {
                 decisionLogger.log(scheduledFunctionDeployment.getKmsArn(), toSchedule);
             }
 
+            // set the value of the dataIns to the storage bucket url for the identified region
+            scheduledDataUpload.forEach((dataIn, dataTransfer) -> {
+                if (dataIn.getValue() == null || dataIn.getValue().isEmpty()) {
+                    dataIn.setValue(buildStorageBucketUrl(MetadataCache.get().getRegionsById()
+                            .get(dataTransfer.getStorageRegionID().intValue())
+                    ));
+                }
+            });
+
+            DataFlowStore.updateValuesInStore(toSchedule.getAtomicFunction().getName(), toUploadInputs,
+                    toSchedule.getAtomicFunction().getDataOuts(), toUploadInputs.size() == 1);
+
             schedulingDecision.getPlannedExecutions().add(new PlannedExecution(minEst, minEft));
             toSchedule.setSchedulingDecision(scheduledFunctionDeployment);
             toSchedule.setScheduledDataIns(scheduledDataIns);
@@ -234,6 +239,12 @@ public class StoreLess implements SchedulingAlgorithm {
             this.regionConcurrencyChecker.scheduleFunction(region, minEst, minEft);
 
             maxEft = Math.max(maxEft, minEft);
+
+            if (TIME_LOGGING) {
+                System.out.printf("Function %s: %.2fms (Computation time: %.2fms, DL: %.2fms, UP: %.2fms)%n",
+                        toSchedule.getAtomicFunction().getName(), finalRTT, finalRTT - finalDownloadTime - finalUploadTime,
+                        finalDownloadTime, finalUploadTime);
+            }
         }
 
         System.out.println("Calculated makespan:" + maxEft);

@@ -105,7 +105,7 @@ public class DataFlowStore {
             DataOuts dataOut = dataOuts.get(source);
             if (dataOut.getValue() != null && !dataOut.getValue().isEmpty()) {
                 return new Triple<>(List.of(dataOut.getValue()), HeftUtil.extractFileAmount(dataOut), HeftUtil.extractFileSize(dataOut));
-            } else {
+            } else if (!source.equals(dataOut.getSource())) {
                 // go through all possible dataOuts, if we get a value then use it, otherwise continue with the dataIns
                 Triple<List<String>, List<Integer>, List<Double>> result = getDataInValue(dataOut.getSource(), true);
                 if (result != null) {
