@@ -1,6 +1,7 @@
 package at.ac.uibk.scheduler.storeless;
 
 import at.ac.uibk.core.functions.objects.DataIns;
+import at.ac.uibk.core.functions.objects.DataOutsAtomic;
 import at.ac.uibk.core.functions.objects.PropertyConstraint;
 import at.ac.uibk.metadata.api.model.DataTransfer;
 import at.ac.uibk.metadata.api.model.DetailedProvider;
@@ -227,8 +228,17 @@ public class StoreLess implements SchedulingAlgorithm {
                 }
             });
 
-            DataFlowStore.updateValuesInStore(toSchedule.getAtomicFunction().getName(), toUploadInputs,
-                    toSchedule.getAtomicFunction().getDataOuts(), toUploadInputs.size() == 1);
+            List<DataOutsAtomic> uploadDataOuts = null;
+            if (toSchedule.getAtomicFunction().getDataOuts() != null) {
+                uploadDataOuts = toSchedule.getAtomicFunction().getDataOuts().stream()
+                        .filter(this::hasUploadPropertySet)
+                        .collect(Collectors.toList());
+            }
+
+            if (uploadDataOuts != null && !uploadDataOuts.isEmpty()) {
+                DataFlowStore.updateValuesInStore(toSchedule.getAtomicFunction().getName(), toUploadInputs,
+                        uploadDataOuts, toUploadInputs.size() == 1);
+            }
 
             schedulingDecision.getPlannedExecutions().add(new PlannedExecution(minEst, minEft));
             toSchedule.setSchedulingDecision(scheduledFunctionDeployment);
@@ -342,7 +352,7 @@ public class StoreLess implements SchedulingAlgorithm {
      * @return true if it has it set, false otherwise
      */
     private boolean hasDownloadPropertySet(DataIns dataIn) {
-        return hasPropertySet(dataIn, "datatransfer", "download");
+        return hasPropertySet(dataIn.getProperties(), "datatransfer", "download");
     }
 
     /**
@@ -353,20 +363,30 @@ public class StoreLess implements SchedulingAlgorithm {
      * @return true if it has it set, false otherwise
      */
     private boolean hasUploadPropertySet(DataIns dataIn) {
-        return hasPropertySet(dataIn, "datatransfer", "upload");
+        return hasPropertySet(dataIn.getProperties(), "datatransfer", "upload");
+    }
+
+    /**
+     * Checks if the {@code dataOut} has the property {@code datatransfer} set to {@code upload}.
+     *
+     * @param dataOut to check
+     *
+     * @return true if it has it set, false otherwise
+     */
+    private boolean hasUploadPropertySet(DataOutsAtomic dataOut) {
+        return hasPropertySet(dataOut.getProperties(), "datatransfer", "upload");
     }
 
     /**
      * Checks if the {@code dataIn} has the property {@code propertyName} set to {@code propertyValue}.
      *
-     * @param dataIn        to check
+     * @param properties    the list of properties to check
      * @param propertyName  the name of the property
      * @param propertyValue the value of the property
      *
      * @return true if it has it set, false otherwise
      */
-    private boolean hasPropertySet(DataIns dataIn, String propertyName, String propertyValue) {
-        List<PropertyConstraint> properties = dataIn.getProperties();
+    private boolean hasPropertySet(List<PropertyConstraint> properties, String propertyName, String propertyValue) {
         if (properties != null && !properties.isEmpty()) {
             for (PropertyConstraint property : properties) {
                 if (property.getName().equalsIgnoreCase(propertyName) &&

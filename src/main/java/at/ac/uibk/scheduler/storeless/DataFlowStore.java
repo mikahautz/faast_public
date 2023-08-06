@@ -227,9 +227,12 @@ public class DataFlowStore {
     private static void handleFunction(Function f) {
         if (f instanceof AtomicFunction) {
             addDataIns(f.getName(), ((AtomicFunction) f).getDataIns());
-            addDataOuts(f.getName(), ((AtomicFunction) f).getDataOuts().stream()
-                    .map(DataOutsAtomic::toDataOuts)
-                    .collect(Collectors.toList()));
+            List<DataOutsAtomic> dataOuts = ((AtomicFunction) f).getDataOuts();
+            if (dataOuts != null) {
+                addDataOuts(f.getName(), dataOuts.stream()
+                        .map(DataOutsAtomic::toDataOuts)
+                        .collect(Collectors.toList()));
+            }
         } else if (f instanceof Compound) {
             addDataIns(f.getName(), ((Compound) f).getDataIns());
             addDataOuts(f.getName(), ((Compound) f).getDataOuts());
