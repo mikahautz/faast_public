@@ -168,7 +168,7 @@ returns the results of multiple functions), it is possible to specify the `filea
 
 For each `dataIn` that specifies where one or multiple files should be uploaded to, we have to specify the properties:
 - `datatransfer`: `upload`
-- `fileamount`: _< amount of files to be downloaded >_
+- `fileamount`: _< amount of files to be uploaded >_
 - `filesize`: _< size of all files combined in MB >_
 
 Additionally, we have to specify which `dataOut` returns the path to the uploaded file(s) (if the function does not 
