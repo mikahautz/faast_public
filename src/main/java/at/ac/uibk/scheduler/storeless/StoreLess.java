@@ -88,6 +88,10 @@ public class StoreLess implements SchedulingAlgorithm {
 
             final FunctionType functionType = MetadataCache.get().getFunctionTypesByName().get(functionTypeName);
 
+            final List<DataOutsAtomic> originalDataOuts = toSchedule.getAtomicFunction().getDataOuts().stream()
+                    .map(DataOutsAtomic::new)
+                    .collect(Collectors.toList());
+
             double minEst = Double.MAX_VALUE;
             double minEft = Double.MAX_VALUE;
             double finalRTT = 0;
@@ -244,6 +248,8 @@ public class StoreLess implements SchedulingAlgorithm {
             toSchedule.setSchedulingDecision(scheduledFunctionDeployment);
             toSchedule.setScheduledDataIns(scheduledDataIns);
             toSchedule.setAlgorithmInfo(new PlannedExecution(minEst, minEft));
+            // write back the original non-modified dataOuts
+            toSchedule.getAtomicFunction().setDataOuts(originalDataOuts);
 
             final Region region = MetadataCache.get().getRegionFor(scheduledFunctionDeployment).orElseThrow();
             this.regionConcurrencyChecker.scheduleFunction(region, minEst, minEft);

@@ -50,6 +50,16 @@ public class PropertyConstraint {
     }
 
     /**
+     * Used to make a deep copy.
+     *
+     * @param other the object to copy
+     */
+    public PropertyConstraint(PropertyConstraint other) {
+        this.name = other.name;
+        this.value = other.value;
+    }
+
+    /**
      * Getter and Setter
      */
 

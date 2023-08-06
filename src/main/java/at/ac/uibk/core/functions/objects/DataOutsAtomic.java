@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * This class describes the data output ports of
@@ -76,6 +77,26 @@ public class DataOutsAtomic {
     public DataOutsAtomic(String atomicOutputName, String atomicOutputType) {
         this.atomicOutputName = atomicOutputName;
         this.atomicOutputType = atomicOutputType;
+    }
+
+    /**
+     * Used to make a deep copy of the object.
+     *
+     * @param dataOut to create a new object
+     */
+    public DataOutsAtomic(DataOutsAtomic dataOut) {
+        this.atomicOutputName = dataOut.atomicOutputName;
+        this.atomicOutputType = dataOut.atomicOutputType;
+        this.atomicOutputSaveTo = dataOut.atomicOutputSaveTo;
+        this.passingDataOutsAtomic = dataOut.passingDataOutsAtomic;
+        this.propertiesDataOutsAtomic = (dataOut.propertiesDataOutsAtomic != null)
+                ? dataOut.propertiesDataOutsAtomic.stream()
+                .map(PropertyConstraint::new).collect(Collectors.toList())
+                : null;
+        this.constraintsDataOutsAtomic = (dataOut.constraintsDataOutsAtomic != null)
+                ? dataOut.constraintsDataOutsAtomic.stream()
+                .map(PropertyConstraint::new).collect(Collectors.toList())
+                : null;
     }
 
     /**

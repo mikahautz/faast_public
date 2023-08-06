@@ -161,8 +161,8 @@ public class DataFlowStore {
                 // we have multiple dataIns that specify an output destination, therefore we have to check which dataOut uses which output destination
                 final Supplier<SchedulingException> propertyIsMissing =
                         () -> new SchedulingException(dataIn.getName() + ": Multiple different outputs are defined, but property 'uploadId' is missing!");
+                boolean propertyMissing = false;
 
-                // TODO check if names are the same of dataIn and dataOut
                 Integer uploadId = null;
                 List<PropertyConstraint> properties = dataIn.getProperties();
                 if (properties != null && !properties.isEmpty()) {
@@ -176,19 +176,24 @@ public class DataFlowStore {
                         }
                     }
                     if (uploadId == null) {
-                        throw propertyIsMissing.get();
+                        propertyMissing = true;
                     }
                 } else {
-                    throw propertyIsMissing.get();
+                    propertyMissing = true;
                 }
 
                 for (DataOutsAtomic dataOut : dataOuts) {
-                    if (hasUploadId(dataOut, uploadId)) {
+                    if ((!propertyMissing && hasUploadId(dataOut, uploadId)) ||
+                            dataIn.getName().equals(dataOut.getName())) {
                         DataOuts tmp = DataFlowStore.getDataOuts().get(functionName + "/" + dataOut.getName());
                         tmp.setValue(value);
                         if (tmp.getProperties() == null) tmp.setProperties(new ArrayList<>());
                         if (dataIn.getProperties() != null) tmp.getProperties().addAll(dataIn.getProperties());
+                        propertyMissing = false;
                     }
+                }
+                if (propertyMissing) {
+                    throw propertyIsMissing.get();
                 }
             }
         }
@@ -205,7 +210,7 @@ public class DataFlowStore {
     private static boolean hasUploadId(DataOutsAtomic dataOut, Integer id) {
         List<PropertyConstraint> properties = dataOut.getProperties();
         try {
-            if (properties != null && !properties.isEmpty()) {
+            if (id != null && properties != null && !properties.isEmpty()) {
                 for (PropertyConstraint property : properties) {
                     if (property.getName().equalsIgnoreCase("uploadId") &&
                             Integer.parseInt(property.getValue()) == id) {
