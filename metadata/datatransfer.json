@@ -141,7 +141,7 @@
       "functionRegionID":11,
       "storageRegionID":11,
       "bandwidth":26,
-      "latency":231
+      "latency":221
    },
    {
       "id":19,
@@ -173,7 +173,7 @@
       "functionRegionID":11,
       "storageRegionID":35,
       "bandwidth":101,
-      "latency":336
+      "latency":351
    },
    {
       "id":23,

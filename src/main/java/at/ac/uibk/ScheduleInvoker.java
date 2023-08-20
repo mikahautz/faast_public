@@ -25,7 +25,7 @@ public class ScheduleInvoker {
      */
     private static final String ALGORITHM = "StoreLess";
 
-    private static final int PREDICTOR_COUNT = 2;
+    private static final int PREDICTOR_COUNT = 1;
 
     /**
      * Use {@link ObjectMapperUtil#YAML_MAPPER} if your input is in yaml

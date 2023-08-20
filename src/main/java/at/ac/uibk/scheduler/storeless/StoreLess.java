@@ -88,9 +88,13 @@ public class StoreLess implements SchedulingAlgorithm {
 
             final FunctionType functionType = MetadataCache.get().getFunctionTypesByName().get(functionTypeName);
 
-            final List<DataOutsAtomic> originalDataOuts = toSchedule.getAtomicFunction().getDataOuts().stream()
-                    .map(DataOutsAtomic::new)
-                    .collect(Collectors.toList());
+            List<DataOutsAtomic> originalDataOuts = null;
+
+            if (toSchedule.getAtomicFunction().getDataOuts() != null) {
+                originalDataOuts = toSchedule.getAtomicFunction().getDataOuts().stream()
+                        .map(DataOutsAtomic::new)
+                        .collect(Collectors.toList());
+            }
 
             double minEst = Double.MAX_VALUE;
             double minEft = Double.MAX_VALUE;
