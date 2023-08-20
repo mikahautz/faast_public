@@ -36,9 +36,9 @@ public class ScheduleInvoker {
     /**
      * Specify in and output files, will be AFCL and CFCL workflows
      */
-    private static final Path INPUT = Path.of("wf.yaml");
-    private static final Path INPUT_JSON = Path.of("input.json");
-    private static final Path OUTPUT = Path.of("wf-cfcl.yaml");
+    private static final Path INPUT = Path.of("bwa_afcl.yaml");
+    private static final Path INPUT_JSON = Path.of("input_bwa_aws.json");
+    private static final Path OUTPUT = Path.of("bwa_cfcl_aws.yaml");
 
     /**
      * Specify the pre- and suffix of the buckets that should be used. The buckets will then look like:

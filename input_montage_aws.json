@@ -1,0 +1,11 @@
+{
+	"bucket": "s3://eu-west-2/",
+	"header" : "region.hdr",
+	"color_folders" : ["gray"],
+	"aws_access_key_id": "",
+  	"aws_secret_access_key": "",
+  	"aws_session_token": "",
+  	"gcp_project_id": "",
+  	"gcp_client_email": "",
+  	"gcp_private_key": ""
+} 

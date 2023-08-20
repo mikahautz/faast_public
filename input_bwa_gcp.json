@@ -1,0 +1,28 @@
+{
+   "output_buckets":[],
+   "fastaFolder":[
+      "Fasta1"
+   ],
+   "fasta":"gs://bwa-europe-west2/NC_000913.3-hipA7.fasta",
+   "chunks":4,
+   "folders":[
+      "f1",
+      "f2",
+      "f3",
+      "f4"
+   ],
+   "folderindex":[
+      1,
+      2,
+      3,
+      4
+   ],
+   "R1":"gs://bwa-europe-west2/reads/hipa7_reads_R1.fastq",
+   "R2":"gs://bwa-europe-west2/reads/hipa7_reads_R2.fastq",
+   "aws_access_key_id": "",
+   "aws_secret_access_key": "",
+   "aws_session_token": "",
+   "gcp_project_id": "",
+   "gcp_client_email": "",
+   "gcp_private_key": ""
+} 
