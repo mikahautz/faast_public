@@ -13,7 +13,8 @@
     "maxDataOutputMB": 6,
     "concurrencyOverheadms": 2.7,
     "faasSystemOverheadms": 30,
-    "cryptoOverheadms": 57
+    "cryptoOverheadms": 57,
+    "sessionOverheadms": 550
   },
   {
     "id": 2,
@@ -29,7 +30,8 @@
     "maxDataOutputMB": 5,
     "concurrencyOverheadms": null,
     "faasSystemOverheadms": null,
-    "cryptoOverheadms": null
+    "cryptoOverheadms": null,
+    "sessionOverheadms": null
   },
   {
     "id": 3,
@@ -45,7 +47,8 @@
     "maxDataOutputMB": 10,
     "concurrencyOverheadms": null,
     "faasSystemOverheadms": null,
-    "cryptoOverheadms": null
+    "cryptoOverheadms": null,
+    "sessionOverheadms": null
   },
   {
     "id": 4,
@@ -61,7 +64,8 @@
     "maxDataOutputMB": null,
     "concurrencyOverheadms": null,
     "faasSystemOverheadms": null,
-    "cryptoOverheadms": null
+    "cryptoOverheadms": null,
+    "sessionOverheadms": null
   },
   {
     "id": 5,
@@ -77,6 +81,7 @@
     "maxDataOutputMB": 6,
     "concurrencyOverheadms": null,
     "faasSystemOverheadms": null,
-    "cryptoOverheadms": null
+    "cryptoOverheadms": null,
+    "sessionOverheadms": null
   }
 ]

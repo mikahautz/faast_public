@@ -51,6 +51,9 @@ public class DetailedProvider implements Entity<Integer>, Serializable {
 
     private Integer cryptoOverheadms;
 
+    @Column(name = "sessionOverheadms", clazz = Integer.class)
+    private Integer sessionOverheadms;
+
     public Integer getCryptoOverheadms() {
         return cryptoOverheadms;
     }
@@ -161,5 +164,13 @@ public class DetailedProvider implements Entity<Integer>, Serializable {
 
     public void setFaasSystemOverheadms(Integer faasSystemOverheadms) {
         this.faasSystemOverheadms = faasSystemOverheadms;
+    }
+
+    public Integer getSessionOverheadms() {
+        return sessionOverheadms;
+    }
+
+    public void setSessionOverheadms(Integer sessionOverheadms) {
+        this.sessionOverheadms = sessionOverheadms;
     }
 }

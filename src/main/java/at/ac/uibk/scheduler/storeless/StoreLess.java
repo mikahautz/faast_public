@@ -79,6 +79,9 @@ public class StoreLess implements SchedulingAlgorithm {
 
         double maxEft = 0;
 
+        // for the first function that is executed on AWS, a session overhead has to be added
+        boolean useAwsSessionOverhead = true;
+
         //schedule each function on the fastest resource, w/o considering concurrency limit
         while (bRankIterator.hasNext()) {
 
@@ -101,6 +104,7 @@ public class StoreLess implements SchedulingAlgorithm {
             double finalRTT = 0;
             double finalDownloadTime = 0;
             double finalUploadTime = 0;
+            boolean addedSessionOverhead = false;
 
             final Supplier<SchedulingException> noScheduleFoundException =
                     () -> new SchedulingException("cannot schedule function for name " + toSchedule.getAtomicFunction().getName());
@@ -112,8 +116,14 @@ public class StoreLess implements SchedulingAlgorithm {
             List<DataIns> toUploadInputs = null;
 
             for (final FunctionDeployment fd : functionDeploymentsByFunctionType.get(functionType)) {
+                boolean usedSessionOverheadForDeployment = false;
                 final Region region = MetadataCache.get().getRegionFor(fd).orElseThrow();
                 RegionResource resource = getBestRegionResource(region);
+
+                if (useAwsSessionOverhead && region.getProvider() == Provider.AWS) {
+                    fd.setAvgRTT(fd.getAvgRTT() + MetadataCache.get().getDetailedProviderFor(region).get().getSessionOverheadms());
+                    usedSessionOverheadForDeployment = true;
+                }
 
                 // get all data transfer entries for the upload that have the current function region
                 List<DataTransfer> uploadDataTransfers = MetadataCache.get().getDataTransfersUpload().stream()
@@ -216,6 +226,7 @@ public class StoreLess implements SchedulingAlgorithm {
 
                     scheduledDataUpload = bestOptions;
                     scheduledDataIns = dataIns;
+                    addedSessionOverhead = usedSessionOverheadForDeployment;
                 }
             }
 
@@ -254,6 +265,10 @@ public class StoreLess implements SchedulingAlgorithm {
             toSchedule.setAlgorithmInfo(new PlannedExecution(minEst, minEft));
             // write back the original non-modified dataOuts
             toSchedule.getAtomicFunction().setDataOuts(originalDataOuts);
+            // if the SO was added, it must not be added again
+            if (addedSessionOverhead) {
+                useAwsSessionOverhead = false;
+            }
 
             final Region region = MetadataCache.get().getRegionFor(scheduledFunctionDeployment).orElseThrow();
             this.regionConcurrencyChecker.scheduleFunction(region, minEst, minEft);
