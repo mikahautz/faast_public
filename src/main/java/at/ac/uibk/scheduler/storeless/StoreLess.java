@@ -89,6 +89,9 @@ public class StoreLess implements SchedulingAlgorithm {
                 .findFirst()
                 .get()
                 .getSessionOverheadms();
+        // the threshold in ms that indicates how much time difference in the EST there may be for other functions
+        // to still have the SO added
+        int sessionOverheadThreshold = 300;
         // stores the EST and the function node for which the SO is needed
         Map<AtomicFunctionNode, Double> usedAwsEst = new HashMap<>();
         // stores the function node, the EST and EFT as a pair as a backup for the SO if multiple nodes have the same b-rank
@@ -166,7 +169,8 @@ public class StoreLess implements SchedulingAlgorithm {
                 // stores all function nodes and their EST that have the same b-rank as the current node
                 Map<AtomicFunctionNode, Double> functionsEst = new HashMap<>();
                 Triple<Integer, Boolean, Double> sessionResult = handleSessionOverhead(toSchedule, region, resource, fd,
-                        this.bRankMap, functionsEst, usedAwsEst, graph, currentEst, awsSessionOverheadValue, useAwsSessionOverhead);
+                        this.bRankMap, functionsEst, usedAwsEst, graph, currentEst, awsSessionOverheadValue,
+                        sessionOverheadThreshold, useAwsSessionOverhead);
 
                 RTT += sessionResult.getFirst();
                 // specifies if there exists a function node with the same b-rank, but with an earlier EST than the current
@@ -240,7 +244,7 @@ public class StoreLess implements SchedulingAlgorithm {
                 useAwsSessionOverhead = false;
                 // if a function is started within 300ms, the SO is still applied
                 for (Map.Entry<AtomicFunctionNode, Double> entry : functionsWithSameBRank.entrySet()) {
-                    entry.getKey().setForceSessionOverhead(Math.abs(minEst - entry.getValue()) <= 300);
+                    entry.getKey().setForceSessionOverhead(Math.abs(minEst - entry.getValue()) <= sessionOverheadThreshold);
                 }
                 usedAwsEst.put(toSchedule, minEst);
             }
@@ -252,7 +256,7 @@ public class StoreLess implements SchedulingAlgorithm {
 
                 // set the flag which function node needs to set the SO
                 for (Map.Entry<AtomicFunctionNode, Double> entry : functionsWithSameBRank.entrySet()) {
-                    entry.getKey().setForceSessionOverhead(Math.abs(earlierFunctionEst - entry.getValue()) <= 300);
+                    entry.getKey().setForceSessionOverhead(Math.abs(earlierFunctionEst - entry.getValue()) <= sessionOverheadThreshold);
                 }
             }
 
@@ -294,17 +298,18 @@ public class StoreLess implements SchedulingAlgorithm {
      * boolean flag that indicates if another function with the same b-rank starts earlier than this one, and the
      * earliest start time of the functions that have the same b-rank as the passed function node.
      *
-     * @param toSchedule              the function node to perform the actions for
-     * @param region                  the region of the current deployment
-     * @param resource                the region resource to schedule the function on
-     * @param fd                      the current function deployment
-     * @param bRankMap                the b-rank map of the workflow
-     * @param functionsEst            the map storing all function nodes and their EST that have the same b-rank
-     * @param usedAwsEst              the map storing the function node and EST that has the SO set
-     * @param graph                   the graph of the workflow
-     * @param currentEst              the current EST of the function node
-     * @param awsSessionOverheadValue the value for the SO
-     * @param useSO                   the flag indicating if SO should be added
+     * @param toSchedule               the function node to perform the actions for
+     * @param region                   the region of the current deployment
+     * @param resource                 the region resource to schedule the function on
+     * @param fd                       the current function deployment
+     * @param bRankMap                 the b-rank map of the workflow
+     * @param functionsEst             the map storing all function nodes and their EST that have the same b-rank
+     * @param usedAwsEst               the map storing the function node and EST that has the SO set
+     * @param graph                    the graph of the workflow
+     * @param currentEst               the current EST of the function node
+     * @param awsSessionOverheadValue  the value for the SO
+     * @param sessionOverheadThreshold the value for the SO threshold
+     * @param useSO                    the flag indicating if SO should be added
      *
      * @return a triple containing the SO, a boolean flag if an earlier EST exists, and the min EST
      */
@@ -318,6 +323,7 @@ public class StoreLess implements SchedulingAlgorithm {
                                                                    DefaultDirectedWeightedGraph<FunctionNode, Communication> graph,
                                                                    double currentEst,
                                                                    int awsSessionOverheadValue,
+                                                                   int sessionOverheadThreshold,
                                                                    boolean useSO) {
         int sessionOverhead = 0;
         boolean earlierEstExists = false;
@@ -349,7 +355,7 @@ public class StoreLess implements SchedulingAlgorithm {
                 }
 
                 // if the current EST is with 300ms of the smallest EST, add SO as well
-                if (Math.abs(currentEst - tmpMinEst) <= 300) {
+                if (Math.abs(currentEst - tmpMinEst) <= sessionOverheadThreshold) {
                     sessionOverhead = awsSessionOverheadValue;
                 } else {
                     // otherwise, set the flag to signal that there is another function with the same b-rank
@@ -372,7 +378,7 @@ public class StoreLess implements SchedulingAlgorithm {
                     .min(Double::compareTo)
                     .orElse(0D);
 
-            if (Math.abs(currentEst - minMapEst) <= 300) {
+            if (Math.abs(currentEst - minMapEst) <= sessionOverheadThreshold) {
                 sessionOverhead = awsSessionOverheadValue;
             }
         }
