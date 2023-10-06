@@ -16,6 +16,8 @@ public class AtomicFunctionNode extends FunctionNode {
 
     private List<DataIns> scheduledDataIns;
 
+    private Boolean forceSessionOverhead = null;
+
     public AtomicFunctionNode(final AtomicFunction function) {
         super();
         this.atomicFunction = function;
@@ -43,5 +45,13 @@ public class AtomicFunctionNode extends FunctionNode {
 
     public void setScheduledDataIns(List<DataIns> scheduledDataIns) {
         this.scheduledDataIns = scheduledDataIns;
+    }
+
+    public Boolean getForceSessionOverhead() {
+        return forceSessionOverhead;
+    }
+
+    public void setForceSessionOverhead(Boolean forceSessionOverhead) {
+        this.forceSessionOverhead = forceSessionOverhead;
     }
 }

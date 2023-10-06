@@ -19,6 +19,8 @@ import at.ac.uibk.scheduler.faast.PlannedExecution;
 import at.ac.uibk.scheduler.faast.RegionConcurrencyChecker;
 import at.ac.uibk.util.DecisionLogger;
 import at.ac.uibk.util.HeftUtil;
+import at.ac.uibk.util.LogEntry;
+import org.jgrapht.alg.util.Pair;
 import org.jgrapht.alg.util.Triple;
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 
@@ -68,6 +70,7 @@ public class StoreLess implements SchedulingAlgorithm {
     @Override
     public void schedule(final DefaultDirectedWeightedGraph<FunctionNode, Communication> graph) {
 
+        List<LogEntry> logEntries = new ArrayList<>();
         DecisionLogger decisionLogger = null;
         if (StoreLess.EXTENDED_LOGGING) {
             decisionLogger = new DecisionLogger(Logger.getLogger(Logger.GLOBAL_LOGGER_NAME));
@@ -81,11 +84,37 @@ public class StoreLess implements SchedulingAlgorithm {
 
         // for the first function that is executed on AWS, a session overhead has to be added
         boolean useAwsSessionOverhead = true;
+        Map<AtomicFunctionNode, Double> usedAwsEst = new HashMap<>();
+        Map<AtomicFunctionNode, Pair<Double, Double>> backupAwsFunctionForSessionOverhead = new HashMap<>();
+        int awsSessionOverheadValue = MetadataCache.get().getDetailedProviders().stream()
+                .filter(provider -> provider.getName().equals("AWS"))
+                .findFirst()
+                .get()
+                .getSessionOverheadms();
 
         //schedule each function on the fastest resource, w/o considering concurrency limit
         while (bRankIterator.hasNext()) {
 
             final AtomicFunctionNode toSchedule = bRankIterator.next();
+
+            // if the flag is null, then all functions with the same b-rank have been checked and none of the others
+            // are deployed to AWS, meaning we have to add the SO to the backup function
+            if (!backupAwsFunctionForSessionOverhead.isEmpty() && toSchedule.getForceSessionOverhead() == null) {
+                AtomicFunctionNode backupFunction = backupAwsFunctionForSessionOverhead.keySet().stream().findFirst().get();
+                useAwsSessionOverhead = false;
+                Pair<Double, Double> timePair = backupAwsFunctionForSessionOverhead.values().stream().findFirst().get();
+                usedAwsEst.put(backupFunction, timePair.getFirst());
+
+                Optional<LogEntry> logEntry = logEntries.stream()
+                        .filter(node -> node.getFunctionNode().getAtomicFunction().getName().equals(
+                                backupFunction.getAtomicFunction().getName()))
+                        .findFirst();
+                logEntry.ifPresent(entry -> entry.addToRTT(awsSessionOverheadValue));
+
+                maxEft = Math.max(maxEft, timePair.getSecond() + awsSessionOverheadValue);
+                useAwsSessionOverhead = false;
+                backupAwsFunctionForSessionOverhead.clear();
+            }
 
             final String functionTypeName = toSchedule.getAtomicFunction().getType();
 
@@ -114,16 +143,13 @@ public class StoreLess implements SchedulingAlgorithm {
             List<DataIns> scheduledDataIns = null;
             Map<DataIns, DataTransfer> scheduledDataUpload = null;
             List<DataIns> toUploadInputs = null;
+            Map<AtomicFunctionNode, Double> functionsWithSameBRank = new HashMap<>();
+            boolean earlierFunctionEstExists = false;
+            double earlierFunctionEst = Double.MAX_VALUE;
 
             for (final FunctionDeployment fd : functionDeploymentsByFunctionType.get(functionType)) {
-                boolean usedSessionOverheadForDeployment = false;
                 final Region region = MetadataCache.get().getRegionFor(fd).orElseThrow();
                 RegionResource resource = getBestRegionResource(region);
-
-                if (useAwsSessionOverhead && region.getProvider() == Provider.AWS) {
-                    fd.setAvgRTT(fd.getAvgRTT() + MetadataCache.get().getDetailedProviderFor(region).get().getSessionOverheadms());
-                    usedSessionOverheadForDeployment = true;
-                }
 
                 // get all data transfer entries for the upload that have the current function region
                 List<DataTransfer> uploadDataTransfers = MetadataCache.get().getDataTransfersUpload().stream()
@@ -208,6 +234,67 @@ public class StoreLess implements SchedulingAlgorithm {
 
                 final double currentEst = HeftUtil.calculateEarliestStartTimeOnResource(resource, graph, toSchedule,
                         fd, RTT, this.regionConcurrencyChecker);
+
+                Map<AtomicFunctionNode, Double> functionsEst = new HashMap<>();
+                boolean earlierEstExists = false;
+                double tmpMinEst = Double.MAX_VALUE;
+                int sessionOverhead = 0;
+
+                if (toSchedule.getForceSessionOverhead() == null && useAwsSessionOverhead && region.getProvider() == Provider.AWS) {
+                    // check if there are any functions with the same b-rank
+                    double bRank = this.bRankMap.get(toSchedule);
+                    List<FunctionNode> fNodes = this.bRankMap.entrySet()
+                            .stream()
+                            .filter(entry -> entry.getValue().equals(bRank) && !entry.getKey().equals(toSchedule))
+                            .map(Map.Entry::getKey)
+                            .collect(Collectors.toList());
+
+                    // if there are functions with the same b-rank, put those functions and their EST into a map and
+                    // store the smallest found EST
+                    if (!fNodes.isEmpty()) {
+                        for (FunctionNode f : fNodes) {
+                            if (f instanceof AtomicFunctionNode) {
+                                double fAvgTime = calculateAverageTime(((AtomicFunctionNode) f));
+                                // TODO fd is currently the same as the current function since we do not know which one will be chosen
+                                double fEst = HeftUtil.calculateEarliestStartTimeOnResource(resource, graph, ((AtomicFunctionNode) f), fd,
+                                        fAvgTime, this.regionConcurrencyChecker);
+                                functionsEst.put(((AtomicFunctionNode) f), fEst);
+                                if (fEst < tmpMinEst) {
+                                    tmpMinEst = fEst;
+                                }
+                            }
+                        }
+
+                        // if the current EST is with 300ms of the smallest EST, add SO as well
+                        if (Math.abs(currentEst - tmpMinEst) <= 300) {
+                            sessionOverhead = awsSessionOverheadValue;
+                        } else {
+                            // otherwise, set the flag to signal that there is another function with the same b-rank
+                            // that has an earlier EST
+                            earlierEstExists = true;
+                        }
+                    } else {
+                        // if no other functions with the same b-rank exist, add the SO
+                        sessionOverhead = awsSessionOverheadValue;
+                    }
+                } else if (toSchedule.getForceSessionOverhead() != null && toSchedule.getForceSessionOverhead()
+                        && region.getProvider() == Provider.AWS) {
+                    // if the flag is set due to having the same b-rank as another function and an earlier EST, add the SO
+                    sessionOverhead = awsSessionOverheadValue;
+                } else if (toSchedule.getForceSessionOverhead() == null && region.getProvider() == Provider.AWS
+                        && !usedAwsEst.isEmpty()) {
+                    // if the SO was already set for a function before, check if the current EST is within 300ms
+                    // of the function that has the SO set, if it does then set the SO for this function as well
+                    double minMapEst = usedAwsEst.values().stream()
+                            .min(Double::compareTo)
+                            .orElse(0D);
+
+                    if (Math.abs(currentEst - minMapEst) <= 300) {
+                        sessionOverhead = awsSessionOverheadValue;
+                    }
+                }
+
+                RTT += sessionOverhead;
                 final double currentEft = currentEst + RTT;
 
                 if (decisionLogger != null) {
@@ -226,7 +313,10 @@ public class StoreLess implements SchedulingAlgorithm {
 
                     scheduledDataUpload = bestOptions;
                     scheduledDataIns = dataIns;
-                    addedSessionOverhead = usedSessionOverheadForDeployment;
+                    addedSessionOverhead = sessionOverhead != 0;
+                    functionsWithSameBRank = functionsEst;
+                    earlierFunctionEstExists = earlierEstExists;
+                    earlierFunctionEst = tmpMinEst;
                 }
             }
 
@@ -268,6 +358,22 @@ public class StoreLess implements SchedulingAlgorithm {
             // if the SO was added, it must not be added again
             if (addedSessionOverhead) {
                 useAwsSessionOverhead = false;
+                // if a function is started within 300ms, the SO is still applied
+                for (Map.Entry<AtomicFunctionNode, Double> entry : functionsWithSameBRank.entrySet()) {
+                    entry.getKey().setForceSessionOverhead(Math.abs(minEst - entry.getValue()) <= 300);
+                }
+                usedAwsEst.put(toSchedule, minEst);
+            }
+
+            // if other functions with the same b-rank have an earlier EST than the current, store the current as a backup
+            // this is needed if the others are not using AWS, then the backup function will get the SO added
+            if (earlierFunctionEstExists) {
+                backupAwsFunctionForSessionOverhead.put(toSchedule, new Pair<>(minEst, minEft));
+
+                // set the flag which function node needs to set the SO
+                for (Map.Entry<AtomicFunctionNode, Double> entry : functionsWithSameBRank.entrySet()) {
+                    entry.getKey().setForceSessionOverhead(Math.abs(earlierFunctionEst - entry.getValue()) <= 300);
+                }
             }
 
             final Region region = MetadataCache.get().getRegionFor(scheduledFunctionDeployment).orElseThrow();
@@ -275,10 +381,23 @@ public class StoreLess implements SchedulingAlgorithm {
 
             maxEft = Math.max(maxEft, minEft);
 
+            // if a function that has the same b-rank (=has the flag set) and the AWS SO was added, we can remove
+            // the backup function from the map
+            if (!backupAwsFunctionForSessionOverhead.isEmpty() && toSchedule.getForceSessionOverhead() != null
+                    && toSchedule.getForceSessionOverhead() && addedSessionOverhead) {
+                backupAwsFunctionForSessionOverhead.clear();
+            }
+
             if (TIME_LOGGING) {
+                logEntries.add(new LogEntry(toSchedule, finalRTT, finalDownloadTime, finalUploadTime));
+            }
+        }
+
+        if (TIME_LOGGING) {
+            for (LogEntry entry : logEntries) {
                 System.out.printf("Function %s: %.2fms (Computation time: %.2fms, DL: %.2fms, UP: %.2fms)%n",
-                        toSchedule.getAtomicFunction().getName(), finalRTT, finalRTT - finalDownloadTime - finalUploadTime,
-                        finalDownloadTime, finalUploadTime);
+                        entry.getFunctionNode().getAtomicFunction().getName(), entry.getRTT(),
+                        entry.getRTT() - entry.getDownloadTime() - entry.getUploadTime(), entry.getDownloadTime(), entry.getUploadTime());
             }
         }
 
@@ -289,6 +408,7 @@ public class StoreLess implements SchedulingAlgorithm {
         }
 
     }
+
 
     /**
      * Checks if the given function deployment is in a region for which an entry in the data transfer entries exists.
