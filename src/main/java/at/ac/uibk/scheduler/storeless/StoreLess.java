@@ -84,13 +84,15 @@ public class StoreLess implements SchedulingAlgorithm {
 
         // for the first function that is executed on AWS, a session overhead has to be added
         boolean useAwsSessionOverhead = true;
-        Map<AtomicFunctionNode, Double> usedAwsEst = new HashMap<>();
-        Map<AtomicFunctionNode, Pair<Double, Double>> backupAwsFunctionForSessionOverhead = new HashMap<>();
         int awsSessionOverheadValue = MetadataCache.get().getDetailedProviders().stream()
                 .filter(provider -> provider.getName().equals("AWS"))
                 .findFirst()
                 .get()
                 .getSessionOverheadms();
+        // stores the EST and the function node for which the SO is needed
+        Map<AtomicFunctionNode, Double> usedAwsEst = new HashMap<>();
+        // stores the function node, the EST and EFT as a pair as a backup for the SO if multiple nodes have the same b-rank
+        Map<AtomicFunctionNode, Pair<Double, Double>> backupAwsFunctionForSessionOverhead = new HashMap<>();
 
         //schedule each function on the fastest resource, w/o considering concurrency limit
         while (bRankIterator.hasNext()) {
@@ -99,29 +101,16 @@ public class StoreLess implements SchedulingAlgorithm {
 
             // if the flag is null, then all functions with the same b-rank have been checked and none of the others
             // are deployed to AWS, meaning we have to add the SO to the backup function
-            if (!backupAwsFunctionForSessionOverhead.isEmpty() && toSchedule.getForceSessionOverhead() == null) {
-                AtomicFunctionNode backupFunction = backupAwsFunctionForSessionOverhead.keySet().stream().findFirst().get();
+            if (!backupAwsFunctionForSessionOverhead.isEmpty() && toSchedule.forceSessionOverhead() == null) {
                 useAwsSessionOverhead = false;
-                Pair<Double, Double> timePair = backupAwsFunctionForSessionOverhead.values().stream().findFirst().get();
-                usedAwsEst.put(backupFunction, timePair.getFirst());
-
-                Optional<LogEntry> logEntry = logEntries.stream()
-                        .filter(node -> node.getFunctionNode().getAtomicFunction().getName().equals(
-                                backupFunction.getAtomicFunction().getName()))
-                        .findFirst();
-                logEntry.ifPresent(entry -> entry.addToRTT(awsSessionOverheadValue));
-
-                maxEft = Math.max(maxEft, timePair.getSecond() + awsSessionOverheadValue);
-                useAwsSessionOverhead = false;
-                backupAwsFunctionForSessionOverhead.clear();
+                maxEft = useBackupFunctionForSessionOverhead(backupAwsFunctionForSessionOverhead, usedAwsEst, maxEft,
+                        awsSessionOverheadValue, logEntries);
             }
 
             final String functionTypeName = toSchedule.getAtomicFunction().getType();
-
             final FunctionType functionType = MetadataCache.get().getFunctionTypesByName().get(functionTypeName);
 
             List<DataOutsAtomic> originalDataOuts = null;
-
             if (toSchedule.getAtomicFunction().getDataOuts() != null) {
                 originalDataOuts = toSchedule.getAtomicFunction().getDataOuts().stream()
                         .map(DataOutsAtomic::new)
@@ -151,11 +140,6 @@ public class StoreLess implements SchedulingAlgorithm {
                 final Region region = MetadataCache.get().getRegionFor(fd).orElseThrow();
                 RegionResource resource = getBestRegionResource(region);
 
-                // get all data transfer entries for the upload that have the current function region
-                List<DataTransfer> uploadDataTransfers = MetadataCache.get().getDataTransfersUpload().stream()
-                        .filter(entry -> Objects.equals(entry.getFunctionRegionID(), fd.getRegionId()))
-                        .collect(Collectors.toList());
-
                 // no suitable resource could be found for this deployment
                 if (resource == null) {
                     continue;
@@ -170,131 +154,26 @@ public class StoreLess implements SchedulingAlgorithm {
                     continue;
                 }
 
-                double downloadTime = 0;
-                for (DataIns dataIn : toDownloadInputs) {
-                    List<String> urls = null;
-                    List<Integer> fileAmounts = HeftUtil.extractFileAmount(dataIn, true);
-                    List<Double> fileSizes = fileSizes = HeftUtil.extractFileSize(dataIn, true);
-
-                    if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
-                        urls = List.of(dataIn.getValue());
-                    } else {
-                        Triple<List<String>, List<Integer>, List<Double>> result = DataFlowStore.getDataInValue(dataIn.getSource(), false);
-                        urls = result.getFirst();
-                        // only set the stored values if they were not explicitly given in the yaml file
-                        if (fileAmounts == null) fileAmounts = result.getSecond();
-                        if (fileSizes == null) fileSizes = result.getThird();
-                    }
-
-                    if (urls.size() != fileAmounts.size() || urls.size() != fileSizes.size()) {
-                        throw new SchedulingException("Amount of storage urls does not match with the amount of specified fileamounts or filesizes!");
-                    }
-
-                    downloadTime += DataTransferTimeModel.calculateDownloadTime(fd.getRegionId(), urls, fileAmounts, fileSizes);
-                }
-
-                double uploadTime = 0;
-
                 Map<DataIns, DataTransfer> bestOptions = new HashMap<>();
-                for (DataIns dataIn : toUploadInputs) {
-                    double upMin = Double.MAX_VALUE;
-
-                    // if an output bucket is specified to be used explicitly, use that one
-                    if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
-                        Long regionId = DataTransferTimeModel.getRegionId(dataIn.getValue());
-                        DataTransfer dataTransfer = uploadDataTransfers.stream()
-                                .filter(entry -> Objects.equals(entry.getStorageRegionID(), regionId))
-                                .findFirst()
-                                .orElseThrow(() -> new SchedulingException("No Data Transfer entry exists for the region of given bucket: " + dataIn.getValue()));
-
-                        List<Integer> fileAmount = HeftUtil.extractFileAmount(dataIn, false);
-                        List<Double> fileSize = HeftUtil.extractFileSize(dataIn, false);
-                        upMin = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount.get(0), fileSize.get(0));
-                        bestOptions.put(dataIn, dataTransfer);
-                    } else {
-                        // loop through storages
-                        for (DataTransfer dataTransfer : uploadDataTransfers) {
-                            List<Integer> fileAmount = HeftUtil.extractFileAmount(dataIn, false);
-                            List<Double> fileSize = HeftUtil.extractFileSize(dataIn, false);
-                            // for the upload, only a single number for the fileamount and filesize may be given,
-                            // that's why we can simply take the first element of the list
-                            double upTime = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount.get(0), fileSize.get(0));
-
-                            if (upTime < upMin) {
-                                upMin = upTime;
-                                bestOptions.put(dataIn, dataTransfer);
-                            }
-                        }
-                    }
-
-                    uploadTime += upMin;
-                }
+                double downloadTime = calculateDownloadTime(toDownloadInputs, fd.getRegionId());
+                double uploadTime = calculateUploadTime(toUploadInputs, bestOptions, fd.getRegionId());
 
                 double RTT = fd.getAvgRTT() + downloadTime + uploadTime;
 
                 final double currentEst = HeftUtil.calculateEarliestStartTimeOnResource(resource, graph, toSchedule,
                         fd, RTT, this.regionConcurrencyChecker);
 
+                // stores all function nodes and their EST that have the same b-rank as the current node
                 Map<AtomicFunctionNode, Double> functionsEst = new HashMap<>();
-                boolean earlierEstExists = false;
-                double tmpMinEst = Double.MAX_VALUE;
-                int sessionOverhead = 0;
+                Triple<Integer, Boolean, Double> sessionResult = handleSessionOverhead(toSchedule, region, resource, fd,
+                        this.bRankMap, functionsEst, usedAwsEst, graph, currentEst, awsSessionOverheadValue, useAwsSessionOverhead);
 
-                if (toSchedule.getForceSessionOverhead() == null && useAwsSessionOverhead && region.getProvider() == Provider.AWS) {
-                    // check if there are any functions with the same b-rank
-                    double bRank = this.bRankMap.get(toSchedule);
-                    List<FunctionNode> fNodes = this.bRankMap.entrySet()
-                            .stream()
-                            .filter(entry -> entry.getValue().equals(bRank) && !entry.getKey().equals(toSchedule))
-                            .map(Map.Entry::getKey)
-                            .collect(Collectors.toList());
+                RTT += sessionResult.getFirst();
+                // specifies if there exists a function node with the same b-rank, but with an earlier EST than the current
+                boolean earlierEstExists = sessionResult.getSecond();
+                // stores the earliest EST of all nodes with the same b-rank
+                double tmpMinEst = sessionResult.getThird();
 
-                    // if there are functions with the same b-rank, put those functions and their EST into a map and
-                    // store the smallest found EST
-                    if (!fNodes.isEmpty()) {
-                        for (FunctionNode f : fNodes) {
-                            if (f instanceof AtomicFunctionNode) {
-                                double fAvgTime = calculateAverageTime(((AtomicFunctionNode) f));
-                                // TODO fd is currently the same as the current function since we do not know which one will be chosen
-                                double fEst = HeftUtil.calculateEarliestStartTimeOnResource(resource, graph, ((AtomicFunctionNode) f), fd,
-                                        fAvgTime, this.regionConcurrencyChecker);
-                                functionsEst.put(((AtomicFunctionNode) f), fEst);
-                                if (fEst < tmpMinEst) {
-                                    tmpMinEst = fEst;
-                                }
-                            }
-                        }
-
-                        // if the current EST is with 300ms of the smallest EST, add SO as well
-                        if (Math.abs(currentEst - tmpMinEst) <= 300) {
-                            sessionOverhead = awsSessionOverheadValue;
-                        } else {
-                            // otherwise, set the flag to signal that there is another function with the same b-rank
-                            // that has an earlier EST
-                            earlierEstExists = true;
-                        }
-                    } else {
-                        // if no other functions with the same b-rank exist, add the SO
-                        sessionOverhead = awsSessionOverheadValue;
-                    }
-                } else if (toSchedule.getForceSessionOverhead() != null && toSchedule.getForceSessionOverhead()
-                        && region.getProvider() == Provider.AWS) {
-                    // if the flag is set due to having the same b-rank as another function and an earlier EST, add the SO
-                    sessionOverhead = awsSessionOverheadValue;
-                } else if (toSchedule.getForceSessionOverhead() == null && region.getProvider() == Provider.AWS
-                        && !usedAwsEst.isEmpty()) {
-                    // if the SO was already set for a function before, check if the current EST is within 300ms
-                    // of the function that has the SO set, if it does then set the SO for this function as well
-                    double minMapEst = usedAwsEst.values().stream()
-                            .min(Double::compareTo)
-                            .orElse(0D);
-
-                    if (Math.abs(currentEst - minMapEst) <= 300) {
-                        sessionOverhead = awsSessionOverheadValue;
-                    }
-                }
-
-                RTT += sessionOverhead;
                 final double currentEft = currentEst + RTT;
 
                 if (decisionLogger != null) {
@@ -313,7 +192,7 @@ public class StoreLess implements SchedulingAlgorithm {
 
                     scheduledDataUpload = bestOptions;
                     scheduledDataIns = dataIns;
-                    addedSessionOverhead = sessionOverhead != 0;
+                    addedSessionOverhead = sessionResult.getFirst() != 0;
                     functionsWithSameBRank = functionsEst;
                     earlierFunctionEstExists = earlierEstExists;
                     earlierFunctionEst = tmpMinEst;
@@ -355,7 +234,8 @@ public class StoreLess implements SchedulingAlgorithm {
             toSchedule.setAlgorithmInfo(new PlannedExecution(minEst, minEft));
             // write back the original non-modified dataOuts
             toSchedule.getAtomicFunction().setDataOuts(originalDataOuts);
-            // if the SO was added, it must not be added again
+
+            // if the SO was added
             if (addedSessionOverhead) {
                 useAwsSessionOverhead = false;
                 // if a function is started within 300ms, the SO is still applied
@@ -383,8 +263,8 @@ public class StoreLess implements SchedulingAlgorithm {
 
             // if a function that has the same b-rank (=has the flag set) and the AWS SO was added, we can remove
             // the backup function from the map
-            if (!backupAwsFunctionForSessionOverhead.isEmpty() && toSchedule.getForceSessionOverhead() != null
-                    && toSchedule.getForceSessionOverhead() && addedSessionOverhead) {
+            if (!backupAwsFunctionForSessionOverhead.isEmpty() && toSchedule.forceSessionOverhead() != null
+                    && toSchedule.forceSessionOverhead() && addedSessionOverhead) {
                 backupAwsFunctionForSessionOverhead.clear();
             }
 
@@ -407,6 +287,216 @@ public class StoreLess implements SchedulingAlgorithm {
             decisionLogger.getLogger().info("Calculated makespan: " + maxEft);
         }
 
+    }
+
+    /**
+     * Handles the session overhead for the function node and returns a triple, consisting of the session overhead, a
+     * boolean flag that indicates if another function with the same b-rank starts earlier than this one, and the
+     * earliest start time of the functions that have the same b-rank as the passed function node.
+     *
+     * @param toSchedule              the function node to perform the actions for
+     * @param region                  the region of the current deployment
+     * @param resource                the region resource to schedule the function on
+     * @param fd                      the current function deployment
+     * @param bRankMap                the b-rank map of the workflow
+     * @param functionsEst            the map storing all function nodes and their EST that have the same b-rank
+     * @param usedAwsEst              the map storing the function node and EST that has the SO set
+     * @param graph                   the graph of the workflow
+     * @param currentEst              the current EST of the function node
+     * @param awsSessionOverheadValue the value for the SO
+     * @param useSO                   the flag indicating if SO should be added
+     *
+     * @return a triple containing the SO, a boolean flag if an earlier EST exists, and the min EST
+     */
+    private Triple<Integer, Boolean, Double> handleSessionOverhead(AtomicFunctionNode toSchedule,
+                                                                   Region region,
+                                                                   RegionResource resource,
+                                                                   FunctionDeployment fd,
+                                                                   Map<FunctionNode, Double> bRankMap,
+                                                                   Map<AtomicFunctionNode, Double> functionsEst,
+                                                                   Map<AtomicFunctionNode, Double> usedAwsEst,
+                                                                   DefaultDirectedWeightedGraph<FunctionNode, Communication> graph,
+                                                                   double currentEst,
+                                                                   int awsSessionOverheadValue,
+                                                                   boolean useSO) {
+        int sessionOverhead = 0;
+        boolean earlierEstExists = false;
+        double tmpMinEst = Double.MAX_VALUE;
+
+        if (toSchedule.forceSessionOverhead() == null && useSO && region.getProvider() == Provider.AWS) {
+            // check if there are any functions with the same b-rank
+            double bRank = this.bRankMap.get(toSchedule);
+            List<FunctionNode> fNodes = this.bRankMap.entrySet()
+                    .stream()
+                    .filter(entry -> entry.getValue().equals(bRank) && !entry.getKey().equals(toSchedule))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList());
+
+            // if there are functions with the same b-rank, put those functions and their EST into a map and
+            // store the smallest found EST
+            if (!fNodes.isEmpty()) {
+                for (FunctionNode f : fNodes) {
+                    if (f instanceof AtomicFunctionNode) {
+                        double fAvgTime = calculateAverageTime(((AtomicFunctionNode) f));
+                        // TODO fd is currently the same as the current function since we do not know which one will be chosen
+                        double fEst = HeftUtil.calculateEarliestStartTimeOnResource(resource, graph, ((AtomicFunctionNode) f), fd,
+                                fAvgTime, this.regionConcurrencyChecker);
+                        functionsEst.put(((AtomicFunctionNode) f), fEst);
+                        if (fEst < tmpMinEst) {
+                            tmpMinEst = fEst;
+                        }
+                    }
+                }
+
+                // if the current EST is with 300ms of the smallest EST, add SO as well
+                if (Math.abs(currentEst - tmpMinEst) <= 300) {
+                    sessionOverhead = awsSessionOverheadValue;
+                } else {
+                    // otherwise, set the flag to signal that there is another function with the same b-rank
+                    // that has an earlier EST
+                    earlierEstExists = true;
+                }
+            } else {
+                // if no other functions with the same b-rank exist, add the SO
+                sessionOverhead = awsSessionOverheadValue;
+            }
+        } else if (toSchedule.forceSessionOverhead() != null && toSchedule.forceSessionOverhead()
+                && region.getProvider() == Provider.AWS) {
+            // if the flag is set due to having the same b-rank as another function and an earlier EST, add the SO
+            sessionOverhead = awsSessionOverheadValue;
+        } else if (toSchedule.forceSessionOverhead() == null && region.getProvider() == Provider.AWS
+                && !usedAwsEst.isEmpty()) {
+            // if the SO was already set for a function before, check if the current EST is within 300ms
+            // of the function that has the SO set, if it does then set the SO for this function as well
+            double minMapEst = usedAwsEst.values().stream()
+                    .min(Double::compareTo)
+                    .orElse(0D);
+
+            if (Math.abs(currentEst - minMapEst) <= 300) {
+                sessionOverhead = awsSessionOverheadValue;
+            }
+        }
+
+        return new Triple<>(sessionOverhead, earlierEstExists, tmpMinEst);
+    }
+
+    /**
+     * Sets the SO to the backup function node, stores the new EST and clears the backup map.
+     *
+     * @param backup          the map containing the backup function node, and a pair of EST and EFT
+     * @param usedAwsEst      the map storing the function node that has the SO set and its EST
+     * @param maxEft          the current EFT of the workflow
+     * @param sessionOverhead the value for the session overhead
+     * @param logEntries      the list containing all log entries that will be updated with the RTT + SO
+     *
+     * @return the new max EFT of the workflow
+     */
+    private double useBackupFunctionForSessionOverhead(Map<AtomicFunctionNode, Pair<Double, Double>> backup,
+                                                       Map<AtomicFunctionNode, Double> usedAwsEst, double maxEft,
+                                                       int sessionOverhead, List<LogEntry> logEntries) {
+        AtomicFunctionNode backupFunction = backup.keySet().stream().findFirst().get();
+        Pair<Double, Double> timePair = backup.values().stream().findFirst().get();
+        // store the new EST and the function node that has the SO set
+        usedAwsEst.put(backupFunction, timePair.getFirst());
+        // update the log entry to the new RTT that contains the SO
+        Optional<LogEntry> logEntry = logEntries.stream()
+                .filter(node -> node.getFunctionNode().getAtomicFunction().getName().equals(
+                        backupFunction.getAtomicFunction().getName()))
+                .findFirst();
+        logEntry.ifPresent(entry -> entry.addToRTT(sessionOverhead));
+        backup.clear();
+        // return the new max EFT of the workflow
+        return Math.max(maxEft, timePair.getSecond() + sessionOverhead);
+    }
+
+    /**
+     * Calculates the download time for the specified inputs.
+     *
+     * @param toDownloadInputs list of dataIns to get the files to download
+     * @param fdRegionId       the region of the function deployment
+     *
+     * @return the calculated download time
+     */
+    private double calculateDownloadTime(List<DataIns> toDownloadInputs, Long fdRegionId) {
+        double downloadTime = 0;
+
+        for (DataIns dataIn : toDownloadInputs) {
+            List<String> urls = null;
+            List<Integer> fileAmounts = HeftUtil.extractFileAmount(dataIn, true);
+            List<Double> fileSizes = fileSizes = HeftUtil.extractFileSize(dataIn, true);
+
+            if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
+                urls = List.of(dataIn.getValue());
+            } else {
+                Triple<List<String>, List<Integer>, List<Double>> result = DataFlowStore.getDataInValue(dataIn.getSource(), false);
+                urls = result.getFirst();
+                // only set the stored values if they were not explicitly given in the yaml file
+                if (fileAmounts == null) fileAmounts = result.getSecond();
+                if (fileSizes == null) fileSizes = result.getThird();
+            }
+
+            if (urls.size() != fileAmounts.size() || urls.size() != fileSizes.size()) {
+                throw new SchedulingException("Amount of storage urls does not match with the amount of specified fileamounts or filesizes!");
+            }
+
+            downloadTime += DataTransferTimeModel.calculateDownloadTime(fdRegionId, urls, fileAmounts, fileSizes);
+        }
+
+        return downloadTime;
+    }
+
+    /**
+     * Calculates the download time for the specified inputs.
+     *
+     * @param toUploadInputs list of dataIns to get the files to upload
+     * @param bestOptions    a map storing the best option for the dataIns to upload and its data transfer entry
+     * @param fdRegionId     the region of the function deployment
+     *
+     * @return the calculated upload time
+     */
+    private double calculateUploadTime(List<DataIns> toUploadInputs, Map<DataIns, DataTransfer> bestOptions, Long fdRegionId) {
+        // get all data transfer entries for the upload that have the current function region
+        List<DataTransfer> uploadDataTransfers = MetadataCache.get().getDataTransfersUpload().stream()
+                .filter(entry -> Objects.equals(entry.getFunctionRegionID(), fdRegionId))
+                .collect(Collectors.toList());
+
+        double uploadTime = 0;
+
+        for (DataIns dataIn : toUploadInputs) {
+            double upMin = Double.MAX_VALUE;
+
+            // if an output bucket is specified to be used explicitly, use that one
+            if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
+                Long regionId = DataTransferTimeModel.getRegionId(dataIn.getValue());
+                DataTransfer dataTransfer = uploadDataTransfers.stream()
+                        .filter(entry -> Objects.equals(entry.getStorageRegionID(), regionId))
+                        .findFirst()
+                        .orElseThrow(() -> new SchedulingException("No Data Transfer entry exists for the region of given bucket: " + dataIn.getValue()));
+
+                List<Integer> fileAmount = HeftUtil.extractFileAmount(dataIn, false);
+                List<Double> fileSize = HeftUtil.extractFileSize(dataIn, false);
+                upMin = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount.get(0), fileSize.get(0));
+                bestOptions.put(dataIn, dataTransfer);
+            } else {
+                // loop through storages
+                for (DataTransfer dataTransfer : uploadDataTransfers) {
+                    List<Integer> fileAmount = HeftUtil.extractFileAmount(dataIn, false);
+                    List<Double> fileSize = HeftUtil.extractFileSize(dataIn, false);
+                    // for the upload, only a single number for the fileamount and filesize may be given,
+                    // that's why we can simply take the first element of the list
+                    double upTime = DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmount.get(0), fileSize.get(0));
+
+                    if (upTime < upMin) {
+                        upMin = upTime;
+                        bestOptions.put(dataIn, dataTransfer);
+                    }
+                }
+            }
+
+            uploadTime += upMin;
+        }
+
+        return uploadTime;
     }
 
 

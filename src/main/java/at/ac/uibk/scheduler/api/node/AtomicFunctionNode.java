@@ -2,10 +2,8 @@ package at.ac.uibk.scheduler.api.node;
 
 import at.ac.uibk.core.functions.AtomicFunction;
 import at.ac.uibk.core.functions.objects.DataIns;
-import at.ac.uibk.core.functions.objects.DataOutsAtomic;
 import at.ac.uibk.metadata.api.model.functions.FunctionDeployment;
 
-import javax.xml.crypto.Data;
 import java.util.List;
 
 public class AtomicFunctionNode extends FunctionNode {
@@ -47,7 +45,7 @@ public class AtomicFunctionNode extends FunctionNode {
         this.scheduledDataIns = scheduledDataIns;
     }
 
-    public Boolean getForceSessionOverhead() {
+    public Boolean forceSessionOverhead() {
         return forceSessionOverhead;
     }
 
