@@ -273,19 +273,23 @@ public class StoreLess implements SchedulingAlgorithm {
             }
 
             if (TIME_LOGGING) {
-                logEntries.add(new LogEntry(toSchedule, finalRTT, finalDownloadTime, finalUploadTime));
+                logEntries.add(new LogEntry(toSchedule, region, finalRTT, finalDownloadTime, finalUploadTime, scheduledDataUpload));
             }
         }
 
         if (TIME_LOGGING) {
+            System.out.printf("%-25s | %-11s | %-17s | %-11s | %-11s | %-10s | %-18s | %-15s%n",
+                    "FUNCTION NAME", "TOTAL TIME", "COMPUTATION TIME", "DL TIME", "UP TIME", "PROVIDER", "REGION", "STORAGE INFO");
+            System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------");
+
             for (LogEntry entry : logEntries) {
-                System.out.printf("Function %s: %.2fms (Computation time: %.2fms, DL: %.2fms, UP: %.2fms)%n",
-                        entry.getFunctionNode().getAtomicFunction().getName(), entry.getRTT(),
-                        entry.getRTT() - entry.getDownloadTime() - entry.getUploadTime(), entry.getDownloadTime(), entry.getUploadTime());
+                entry.print();
             }
+
+            System.out.println("-----------------------------------------------------------------------------------------------------------------------------------------");
         }
 
-        System.out.println("Calculated makespan:" + maxEft);
+        System.out.println("Calculated makespan: " + maxEft);
 
         if (decisionLogger != null) {
             decisionLogger.getLogger().info("Calculated makespan: " + maxEft);
