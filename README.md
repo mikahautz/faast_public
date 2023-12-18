@@ -1,4 +1,4 @@
-# FaaST: Public Demo Version
+# FaaST & StoreLess: Public Demo Version
 
 ## System requirements
 
@@ -7,26 +7,21 @@
 
 ## Short description
 
-This repository contains a version of FaaST, which runs without requiring the whole AFCL tech-stack. 
-While the full version utilizes a database server, to retrieve metadata information about the available function types (FT),
-its correspoding deployments (FD) and important scheduling information like
-average round trip time (avgRTT), this version is configured to retrieve this information from 
-static files located in [metadata](metadata).
+This repository contains two schedulers: FaaST and StoreLess.
 
 The used setup provides you with an environment which is easy to set up (without requiring a separate DB) and is able to deliver
 reproducable results. 
 
 The class [ScheduleInvoker](src/main/java/at/ac/uibk/ScheduleInvoker.java) represents the Main of this Java program
 and can be used to further customize input and output files.
-By default, the input file is ```BWAfaast4_afcl.yaml```, the output file ```BWAfaast4_cfcl.yaml``` and as Scheduler 
-the proposed ```FaaST``` is chosen. The loop is assumed to have 60 iterations. 
-Note, that by changing the field ```ALGRORITHM``` in [ScheduleInvoker](src/main/java/at/ac/uibk/ScheduleInvoker.java) 
-to ```Random```, a random scheduler is chosen.
+
+Different schedulers can be chosen by changing the field ```ALGRORITHM``` in [ScheduleInvoker](src/main/java/at/ac/uibk/ScheduleInvoker.java) 
+between ```FaaST```, ```StoreLess``` and ```Random```.
 
 ## Installation and Execution
 
 ```shell
-git clone https://github.com/pgritsch/faast_public.git && cd faast_public
+git clone https://github.com/mikahautz/faast_public.git && cd faast_public
 ```
 
 ```shell
@@ -37,10 +32,12 @@ gradle clean build
 java -jar build/libs/afcl_published-1.0-IEEE.jar
 ```
 
-## Example Workflow - BWA
+## FaaST
+
+### Example Workflow - BWA
 For BWA see [https://doi.org/10.1093/bioinformatics/btp698](https://doi.org/10.1093/bioinformatics/btp698)
 
-### Input file (full file see [BWAfaast4_afcl.yaml](BWAfaast4_afcl.yaml))
+#### Input file (full file see [BWAfaast4_afcl.yaml](BWAfaast4_afcl.yaml))
 
 Note that no resource is defined, on where to execute the given function, but just the function type (FT) ```splitType```
 
