@@ -111,6 +111,74 @@ In order to use `StoreLess`, the data movement has to be specified in the workfl
 
 ### Download:
 
+#### Using Services:
+
+Using the `services` notation in the `properties` of a function, specify:
+- `name`: A descriptive and unique name (per function) for the service.
+- `serviceType`: The type of service, e.g., `download`
+- `workPerUnit`: The total filesize of all files
+- `amountOfUnits`: The amount of files to be downloaded
+- `dataInRef`: The referenced `name` for the `dataIns` that downloads the file(s)
+
+```yaml
+- function:
+  name: "function1"
+  type: "function1Type"
+  dataIns:
+  - name: "testFile"
+    type: "string"
+    source: "XXX/testFile"
+  properties:
+  - services:
+    - name: "downloadToFunction"
+      serviceType: "download"
+      workPerUnit: 14.5
+      amountOfUnits: 2
+      dataInRef: "testFile"
+```
+
+For functions that take a list of storage buckets urls as an input (for example, the output of a `Parallel` construct
+returns the results of multiple functions), multiple services have to be specified. Each service has to reference the `name`
+of the `dataIns` followed by `/<number>` identifying which file(s) are downloaded from the list of sources (E.g., `dlPart1`
+downloads the file indicated by `parallelFunction1/file1`. Since this file is in the first position of the list of sources, 
+`testFiles/1` has to be specified):
+
+```yaml
+- parallel:
+  name: "parallelConstruct"
+  ...
+  dataOuts:
+  - name: "allFiles"
+    type: "collection"
+    source: "parallelFunction1/file1, parallelFunction2/twoFiles, parallelFunction3/file3"
+- function:
+  name: "function1"
+  type: "function1Type"
+  dataIns:
+  - name: "testFiles"
+    type: "collection"
+    source: "parallelConstruct/allFiles"
+  properties:
+  - services:
+    - name: "dlPart1"
+      serviceType: "download"
+      workPerUnit: 11.1
+      amountOfUnits: 1
+      dataInRef: "testFiles/1"
+    - name: "dlPart2"
+      serviceType: "download"
+      workPerUnit: 18.5
+      amountOfUnits: 2
+      dataInRef: "testFiles/2"
+    - name: "dlPart3"
+      serviceType: "download"
+      workPerUnit: 23.4
+      amountOfUnits: 1
+      dataInRef: "testFiles/3"
+```
+
+#### Legacy:
+
 For each `dataIn` that downloads one or multiple files, we have to specify the properties:
 - `datatransfer`: `download`
 - `fileamount`: _< amount of files to be downloaded >_
@@ -162,6 +230,39 @@ returns the results of multiple functions), it is possible to specify the `filea
       value: "11.1, 18.5, 23.4"
 ```
 ### Upload:
+
+#### Using Services:
+
+Using the `services` notation in the `properties` of a function, specify:
+- `name`: A descriptive and unique name (per function) for the service.
+- `serviceType`: The type of service, e.g., `upload`
+- `workPerUnit`: The total filesize of all files
+- `amountOfUnits`: The amount of files to be uploaded
+- `dataInRef`: The referenced `name` for the `dataIns` that downloads the file(s)
+- `dataOutRef`: _(Optional)_ The referenced `name` for the `dataOuts` that returns the path to the uploaded file(s) 
+_(if needed later on in the workflow)_
+
+```yaml
+- function:
+  name: "function1"
+  type: "function1Type"
+  dataIns:
+  - name: "resultFiles"
+    type: "string"
+  dataOuts:
+  - name: "resultFilesPath"
+    type: "string"
+  properties:
+  - services:
+    - name: "uploadFromFunction"
+      serviceType: "upload"
+      workPerUnit: 56.1
+      amountOfUnits: 3
+      dataInRef: "resultFiles"
+      dataOutRef: "resultFilesPath"
+```
+
+#### Legacy:
 
 For each `dataIn` that specifies where one or multiple files should be uploaded to, we have to specify the properties:
 - `datatransfer`: `upload`
