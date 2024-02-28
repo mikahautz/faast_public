@@ -3,8 +3,10 @@ package at.ac.uibk.core.functions.objects;
 import com.fasterxml.jackson.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * This class describes a property or constraint which
@@ -15,7 +17,8 @@ import java.util.Objects;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
         "name",
-        "value"
+        "value",
+        "services"
 })
 public class PropertyConstraint {
 
@@ -26,11 +29,17 @@ public class PropertyConstraint {
     private String name;
 
     /**
-     * Value of the property or constraint regarding
-     * its {@link PropertyConstraint#name}
+     * Value of the property or constraint regarding its {@link PropertyConstraint#name}
      */
     @JsonProperty("value")
     private String value;
+
+    /**
+     * List of services that are specified for function properties.
+     */
+    @JsonProperty("services")
+    private List<Service> services;
+
     @JsonIgnore
     private Map<String, Object> additionalPropertiesPropertiesConstraint = new HashMap<>();
 
@@ -57,6 +66,12 @@ public class PropertyConstraint {
     public PropertyConstraint(PropertyConstraint other) {
         this.name = other.name;
         this.value = other.value;
+        if (other.services != null) {
+            this.services = other.services.stream()
+                    .map(Service::new)
+                    .collect(Collectors.toList());
+        }
+        this.additionalPropertiesPropertiesConstraint.putAll(other.additionalPropertiesPropertiesConstraint);
     }
 
     /**
@@ -83,6 +98,16 @@ public class PropertyConstraint {
         this.value = value;
     }
 
+    @JsonProperty("services")
+    public List<Service> getServices() {
+        return services;
+    }
+
+    @JsonProperty("services")
+    public void setServices(List<Service> services) {
+        this.services = services;
+    }
+
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
         return this.additionalPropertiesPropertiesConstraint;
@@ -104,11 +129,12 @@ public class PropertyConstraint {
         PropertyConstraint that = (PropertyConstraint) o;
         return Objects.equals(name, that.name) &&
                 Objects.equals(value, that.value) &&
-                Objects.equals(additionalPropertiesPropertiesConstraint, that.additionalPropertiesPropertiesConstraint);
+                Objects.equals(additionalPropertiesPropertiesConstraint, that.additionalPropertiesPropertiesConstraint) &&
+                Objects.equals(services, that.services);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, value, additionalPropertiesPropertiesConstraint);
+        return Objects.hash(name, value, additionalPropertiesPropertiesConstraint, services);
     }
 }
