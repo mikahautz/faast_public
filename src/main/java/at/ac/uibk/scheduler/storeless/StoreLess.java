@@ -3,6 +3,7 @@ package at.ac.uibk.scheduler.storeless;
 import at.ac.uibk.core.functions.objects.DataIns;
 import at.ac.uibk.core.functions.objects.DataOutsAtomic;
 import at.ac.uibk.core.functions.objects.PropertyConstraint;
+import at.ac.uibk.core.functions.objects.Service;
 import at.ac.uibk.metadata.api.model.DataTransfer;
 import at.ac.uibk.metadata.api.model.DetailedProvider;
 import at.ac.uibk.metadata.api.model.FunctionType;
@@ -27,6 +28,8 @@ import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -120,6 +123,14 @@ public class StoreLess implements SchedulingAlgorithm {
                         .collect(Collectors.toList());
             }
 
+            Map<String, DataIns> originalDataIns;
+            if (toSchedule.getAtomicFunction().getDataIns() != null) {
+                originalDataIns = toSchedule.getAtomicFunction().getDataIns().stream()
+                        .collect(Collectors.toMap(DataIns::getName, DataIns::new));
+            } else {
+                originalDataIns = null;
+            }
+
             double minEst = Double.MAX_VALUE;
             double minEft = Double.MAX_VALUE;
             double finalRTT = 0;
@@ -149,8 +160,10 @@ public class StoreLess implements SchedulingAlgorithm {
                 }
 
                 List<DataIns> dataIns = toSchedule.getAtomicFunction().getDataIns();
-                List<DataIns> toDownloadInputs = extractDownloadDataIns(dataIns);
-                toUploadInputs = extractUploadDataIns(dataIns);
+                List<DataIns> toDownloadInputs = extractDownloadDataIns(dataIns, getServicesOfType(toSchedule, "download"),
+                        toSchedule.getAtomicFunction().getName());
+                toUploadInputs = extractUploadDataIns(dataIns, getServicesOfType(toSchedule, "upload"),
+                        toSchedule.getAtomicFunction().getName());
 
                 // check if any data needs to be down- or uploaded, and if the function region exists in the data transfer entries
                 if ((!toDownloadInputs.isEmpty() || !toUploadInputs.isEmpty()) && !dataTransferEntryExistsFor(fd)) {
@@ -161,7 +174,11 @@ public class StoreLess implements SchedulingAlgorithm {
                 double downloadTime = calculateDownloadTime(toDownloadInputs, fd.getRegionId());
                 double uploadTime = calculateUploadTime(toUploadInputs, bestOptions, fd.getRegionId());
 
-                double RTT = fd.getAvgRTT() + downloadTime + uploadTime;
+                // TODO uncomment to remove DL + UP times from DB-times
+//                double storedTransferTime = removeDataTransferTime(toDownloadInputs, toUploadInputs, fd, getServicesOfType(toSchedule, "download"),
+//                        getServicesOfType(toSchedule, "upload"), toSchedule.getAtomicFunction().getName());
+                double storedTransferTime = 0;
+                double RTT = fd.getAvgRTT() - storedTransferTime + downloadTime + uploadTime;
 
                 final double currentEst = HeftUtil.calculateEarliestStartTimeOnResource(resource, graph, toSchedule,
                         fd, RTT, this.regionConcurrencyChecker);
@@ -220,11 +237,24 @@ public class StoreLess implements SchedulingAlgorithm {
                 }
             });
 
+            // set the properties to the original properties (in case they have been modified temporarily for using the services)
+            toSchedule.getAtomicFunction().getDataIns().forEach((dataIns -> {
+                dataIns.setProperties(originalDataIns.get(dataIns.getName()).getProperties());
+            }));
+
             List<DataOutsAtomic> uploadDataOuts = null;
             if (toSchedule.getAtomicFunction().getDataOuts() != null) {
                 uploadDataOuts = toSchedule.getAtomicFunction().getDataOuts().stream()
                         .filter(this::hasUploadPropertySet)
                         .collect(Collectors.toList());
+            }
+            for (Service service : getServicesOfType(toSchedule, "upload")) {
+                if (service.getDataOutRef() != null && !service.getDataOutRef().isEmpty()) {
+                    uploadDataOuts.addAll(toSchedule.getAtomicFunction().getDataOuts().stream()
+                            .filter(d -> getBaseReference(service.getDataOutRef()).equalsIgnoreCase(d.getName()) ||
+                                    getBaseReference(service.getDataOutRef()).equalsIgnoreCase(toSchedule.getAtomicFunction().getName() + "/" + d.getName()))
+                            .collect(Collectors.toList()));
+                }
             }
 
             if (uploadDataOuts != null && !uploadDataOuts.isEmpty()) {
@@ -295,6 +325,24 @@ public class StoreLess implements SchedulingAlgorithm {
             decisionLogger.getLogger().info("Calculated makespan: " + maxEft);
         }
 
+    }
+
+    /**
+     * Gets a list of all services of the given function that have the given service type.
+     *
+     * @param function    the function to get the services from
+     * @param serviceType the service type
+     *
+     * @return a list of all services with the given type
+     */
+    private List<Service> getServicesOfType(AtomicFunctionNode function, String serviceType) {
+        if (function.getAtomicFunction().getProperties() == null) {
+            return new ArrayList<>();
+        }
+        return function.getAtomicFunction().getProperties().stream()
+                .flatMap(property -> property.getServices().stream())
+                .filter(service -> serviceType.equalsIgnoreCase(service.getServiceType()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -420,6 +468,88 @@ public class StoreLess implements SchedulingAlgorithm {
     }
 
     /**
+     * Returns the data transfer time to be removed from the avg RTT stored in the DB.
+     *
+     * @param toDownload       List of DataIns objects to be downloaded.
+     * @param toUpload         List of DataIns objects to be uploaded.
+     * @param fd               FunctionDeployment object containing deployment information.
+     * @param downloadServices List of Service objects for download operations.
+     * @param uploadServices   List of Service objects for upload operations.
+     * @param functionName     The name of the function associated with the data transfers.
+     *
+     * @return The total data transfer time for downloading and uploading data.
+     */
+    private double removeDataTransferTime(List<DataIns> toDownload, List<DataIns> toUpload, FunctionDeployment fd,
+                                          List<Service> downloadServices, List<Service> uploadServices, String functionName) {
+        return calculateTransferTime(toDownload, downloadServices, fd, functionName, "download") +
+                calculateTransferTime(toUpload, uploadServices, fd, functionName, "upload");
+    }
+
+    /**
+     * Calculates the transfer time for data inputs based on specified parameters.
+     *
+     * @param dataIns      List of DataIns objects representing data inputs.
+     * @param services     List of Service objects representing services.
+     * @param fd           FunctionDeployment object containing deployment information.
+     * @param functionName The name of the function associated with the data inputs.
+     * @param transferType The type of data transfer, either "download" or "upload".
+     *
+     * @return The total transfer time for the specified data inputs and transfer type.
+     *
+     * @throws SchedulingException If no Data Transfer entry exists for the given function region and storage region.
+     */
+    private double calculateTransferTime(List<DataIns> dataIns, List<Service> services, FunctionDeployment fd,
+                                         String functionName, String transferType) {
+        double transferTime = 0;
+
+        for (DataIns dataIn : dataIns) {
+            List<String> urls = null;
+            Integer storageRegionId = null;
+            List<Integer> fileAmounts = HeftUtil.extractFileAmount(dataIn, true);
+            List<Double> fileSizes = HeftUtil.extractFileSize(dataIn, true);
+
+            if (dataIn.getSource() != null) {
+                Triple<List<String>, List<Integer>, List<Double>> result = DataFlowStore.getDataInValue(dataIn.getSource(), false);
+                if (fileAmounts == null) fileAmounts = result.getSecond();
+                if (fileSizes == null) fileSizes = result.getThird();
+            }
+
+            Optional<Service> matching = services.stream()
+                    .filter(s -> getBaseReference(s.getDataInRef()).equalsIgnoreCase(dataIn.getName()) ||
+                            getBaseReference(s.getDataInRef()).equalsIgnoreCase(functionName + "/" + dataIn.getName()))
+                    .findFirst();
+
+            if (matching.isPresent() && matching.get().getDbServiceRegion() != null) {
+                Region region = MetadataCache.get().getRegionsByName().get(matching.get().getDbServiceRegion());
+                urls = List.of(buildStorageBucketUrl(region));
+                storageRegionId = region.getId();
+            } else {
+                // use collocated
+                Region collocated = MetadataCache.get().getRegionsById().get(fd.getRegionId().intValue());
+                urls = List.of(buildStorageBucketUrl(collocated));
+                storageRegionId = collocated.getId();
+            }
+
+            if (transferType.equalsIgnoreCase("download")) {
+                transferTime += DataTransferTimeModel.calculateDownloadTime(fd.getRegionId(), urls, fileAmounts, fileSizes);
+            } else if (transferType.equalsIgnoreCase("upload")) {
+                Long finalStorageRegionId = Long.valueOf(storageRegionId);
+                DataTransfer dataTransfer = MetadataCache.get().getDataTransfersUpload().stream()
+                        .filter(entry -> Objects.equals(entry.getFunctionRegionID(), fd.getRegionId()) &&
+                                Objects.equals(entry.getStorageRegionID(), finalStorageRegionId))
+                        .findFirst()
+                        .orElseThrow(() -> new SchedulingException("No Data Transfer entry exists for function region " +
+                                fd.getRegionId() + " and storage region " + finalStorageRegionId));
+
+                transferTime += DataTransferTimeModel.calculateUploadTime(dataTransfer, fileAmounts.get(0), fileSizes.get(0));
+            }
+        }
+
+        return transferTime;
+    }
+
+
+    /**
      * Calculates the download time for the specified inputs.
      *
      * @param toDownloadInputs list of dataIns to get the files to download
@@ -433,7 +563,7 @@ public class StoreLess implements SchedulingAlgorithm {
         for (DataIns dataIn : toDownloadInputs) {
             List<String> urls = null;
             List<Integer> fileAmounts = HeftUtil.extractFileAmount(dataIn, true);
-            List<Double> fileSizes = fileSizes = HeftUtil.extractFileSize(dataIn, true);
+            List<Double> fileSizes = HeftUtil.extractFileSize(dataIn, true);
 
             if (dataIn.getValue() != null && !dataIn.getValue().isEmpty()) {
                 urls = List.of(dataIn.getValue());
@@ -556,36 +686,215 @@ public class StoreLess implements SchedulingAlgorithm {
     }
 
     /**
-     * Get all dataIns that have the {@code datatransfer} property set to {@code download}
+     * Get all dataIns and services that have the {@code datatransfer} property set to {@code download}
      *
-     * @param dataIns the list of dataIns to check
+     * @param dataIns      the list of dataIns to check
+     * @param services     the list of download-services
+     * @param functionName the name of the function
      *
      * @return a list of dataIns that should be downloaded
      */
-    private List<DataIns> extractDownloadDataIns(List<DataIns> dataIns) {
+    private List<DataIns> extractDownloadDataIns(List<DataIns> dataIns, List<Service> services, String functionName) {
         List<DataIns> dlDataIns = new ArrayList<>();
         for (DataIns dataIn : dataIns) {
             if (hasDownloadPropertySet(dataIn)) {
                 dlDataIns.add(dataIn);
             }
         }
+
+        for (Service service : services) {
+            DataIns createdDataIns = getCreatedDataIns(getBaseReference(service.getDataInRef()), service, "download",
+                    dataIns, services, functionName, isMultiPart(service.getDataInRef()));
+            if (createdDataIns != null) {
+                dlDataIns.add(createdDataIns);
+            }
+        }
+
         return dlDataIns;
     }
 
     /**
-     * Get all dataIns that have the {@code datatransfer} property set to {@code upload}
+     * Creates a new DataIns object based on the specified parameters of the service.
      *
-     * @param dataIns the list of dataIns to check
+     * @param dataInsRef   The reference name of the DataIns object.
+     * @param service      The Service object referencing the DataIns.
+     * @param transferType The type of data transfer, either "download" or "upload".
+     * @param dataIns      List of existing DataIns objects.
+     * @param services     List of available Service objects.
+     * @param functionName The name of the function associated with the DataIns.
+     * @param isMultiPart  A boolean indicating whether multiple transfers exist for the same DataIns.
+     *
+     * @return The created DataIns object.
+     *
+     * @throws SchedulingException If no 'dataInRef' is set for the specified service, or if the referenced DataIns for
+     *                             a download service is not found, or if an unexpected scheduling exception occurs.
+     */
+    private DataIns getCreatedDataIns(String dataInsRef, Service service, String transferType, List<DataIns> dataIns,
+                                      List<Service> services, String functionName, boolean isMultiPart) {
+        if (service.getDataInRef() == null) {
+            throw new SchedulingException("No 'dataInRef' set for " + transferType + " service '" + service.getName() +
+                    "' for function '" + functionName + "'");
+        }
+
+        Optional<DataIns> dataIn = dataIns.stream()
+                .filter(d -> dataInsRef.equalsIgnoreCase(d.getName()) ||
+                        dataInsRef.equalsIgnoreCase(functionName + "/" + d.getName()))
+                .findFirst();
+
+        if (dataIn.isPresent()) {
+            DataIns in = dataIn.get();
+            if ((transferType.equals("download") && !hasDownloadPropertySet(in)) ||
+                    (transferType.equals("upload") && !hasUploadPropertySet(in))) {
+                if (in.getProperties() == null) {
+                    in.setProperties(new ArrayList<>());
+                }
+                in.getProperties().addAll(getCreatedProperties(service, transferType, services, isMultiPart, dataInsRef));
+                return in;
+            }
+        } else {
+            throw new SchedulingException("Set dataInRef '" + service.getDataInRef() + "' for download service '" + service.getName() +
+                    "' not found in DataIns for function '" + functionName + "'");
+        }
+        return null;
+    }
+
+    /**
+     * Creates a list of PropertyConstraint objects based on the specified parameters.
+     *
+     * @param service      The Service object associated with the DataIns.
+     * @param transferType The type of data transfer, either "download" or "upload".
+     * @param services     List of available Service objects.
+     * @param isMultiPart  A boolean indicating whether the data transfer involves multiple parts.
+     * @param dataInsRef   The referenced name for the DataIns object.
+     *
+     * @return The list of created PropertyConstraint objects.
+     */
+    private List<PropertyConstraint> getCreatedProperties(Service service, String transferType, List<Service> services,
+                                                          boolean isMultiPart, String dataInsRef) {
+        List<PropertyConstraint> properties = new ArrayList<>();
+        properties.add(new PropertyConstraint("datatransfer", transferType));
+
+        if (!isMultiPart) {
+            properties.add(new PropertyConstraint("fileamount", service.getAmountOfUnits().toString()));
+            properties.add(new PropertyConstraint("filesize", service.getWorkPerUnit().toString()));
+        } else {
+            List<Service> similarServices = services.stream()
+                    .filter(s -> s.getDataInRef().startsWith(dataInsRef + "/"))
+                    .sorted((s1, s2) -> {
+                        return Integer.compare(extractNumber(s1.getDataInRef()), extractNumber(s2.getDataInRef()));
+                    })
+                    .collect(Collectors.toList());
+
+            StringBuilder amountString = new StringBuilder();
+            StringBuilder sizeString = new StringBuilder();
+
+            for (Service s : similarServices) {
+                amountString.append(s.getAmountOfUnits()).append(",");
+                sizeString.append(s.getWorkPerUnit()).append(",");
+            }
+
+            if (amountString.length() > 0) {
+                amountString.deleteCharAt(amountString.length() - 1);
+            }
+            if (sizeString.length() > 0) {
+                sizeString.deleteCharAt(sizeString.length() - 1);
+            }
+
+            properties.add(new PropertyConstraint("fileamount", amountString.toString()));
+            properties.add(new PropertyConstraint("filesize", sizeString.toString()));
+        }
+
+        return properties;
+    }
+
+    /**
+     * Extracts and returns the numeric part from the end of a string.
+     *
+     * @param dataInRef The input string from which the numeric part is to be extracted.
+     *
+     * @return The extracted numeric part as an integer. If no numeric part is found, returns 0.
+     */
+    private static int extractNumber(String dataInRef) {
+        Pattern pattern = Pattern.compile("\\d+$");
+        Matcher matcher = pattern.matcher(dataInRef);
+
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group());
+        } else {
+            return 0;
+        }
+    }
+
+    /**
+     * Extracts and returns the base reference from a given data input reference, excluding the numeric part at the
+     * end.
+     *
+     * @param dataInRef The input data input reference from which the base reference is to be extracted.
+     *
+     * @return The base reference without the numeric part. If no numeric part is found, returns the original data input
+     * reference.
+     */
+    private String getBaseReference(String dataInRef) {
+        String[] parts = dataInRef.split("/(?=[^/]+$)");
+
+        if (parts.length >= 2 && isNumeric(parts[parts.length - 1])) {
+            return String.join("/", Arrays.copyOf(parts, parts.length - 1));
+        } else {
+            return dataInRef;
+        }
+    }
+
+    /**
+     * Checks if a given string is a numeric value.
+     *
+     * @param str The input string to be checked for numeric nature.
+     *
+     * @return True if the input string is numeric; otherwise, false.
+     */
+    private boolean isNumeric(String str) {
+        return str.matches("-?\\d+(\\.\\d+)?");
+    }
+
+    /**
+     * Checks if a given data input reference indicates a multi-part transfer based on the presence of numeric
+     * suffixes.
+     *
+     * @param dataInRef The data input reference to be checked for multi-part nature.
+     *
+     * @return True if the data input reference indicates a multi-part transfer; otherwise, false.
+     */
+    private boolean isMultiPart(String dataInRef) {
+        // / followed and ending with one or more digits
+        String pattern = "/\\d+\\d?$";
+
+        return dataInRef.matches(".*" + pattern + ".*");
+    }
+
+    /**
+     * Get all dataIns and services that have the {@code datatransfer} property set to {@code upload}
+     *
+     * @param dataIns      the list of dataIns to check
+     * @param services     the list of upload-services
+     * @param functionName the name of the function
      *
      * @return a list of dataIns that should be uploaded
      */
-    private List<DataIns> extractUploadDataIns(List<DataIns> dataIns) {
+    private List<DataIns> extractUploadDataIns(List<DataIns> dataIns, List<Service> services, String functionName) {
         List<DataIns> upDataIns = new ArrayList<>();
         for (DataIns dataIn : dataIns) {
             if (hasUploadPropertySet(dataIn)) {
                 upDataIns.add(dataIn);
             }
         }
+
+        for (Service service : services) {
+            DataIns createdDataIns = getCreatedDataIns(getBaseReference(service.getDataInRef()), service, "upload",
+                    dataIns, services, functionName, isMultiPart(service.getDataInRef()));
+            if (createdDataIns != null) {
+                upDataIns.add(createdDataIns);
+            }
+        }
+
         return upDataIns;
     }
 

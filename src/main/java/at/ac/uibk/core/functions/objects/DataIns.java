@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * This class describes the data input ports of
@@ -94,6 +95,26 @@ public class DataIns {
         this.inputName = inputName;
         this.inputType = inputType;
         this.inputSource = inputSource;
+    }
+
+    public DataIns(DataIns original) {
+        this.inputName = original.inputName;
+        this.inputType = original.inputType;
+        this.inputSource = original.inputSource;
+        this.inputValue = original.inputValue;
+        this.passingDataIns = original.passingDataIns;
+
+        if (original.propertiesDataIns != null) {
+            this.propertiesDataIns = original.propertiesDataIns.stream()
+                    .map(PropertyConstraint::new)
+                    .collect(Collectors.toList());
+        }
+
+        if (original.constraintsDataIns != null) {
+            this.constraintsDataIns = original.constraintsDataIns.stream()
+                    .map(PropertyConstraint::new)
+                    .collect(Collectors.toList());
+        }
     }
 
     /**
